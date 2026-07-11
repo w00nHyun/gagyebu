@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>나의 가계부 목록</title>
+  <!-- 💡 부트스트랩 5 CDN 링크 추가 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://kit.fontawesome.com/3cda4bc1c7.js" crossorigin="anonymous"></script>
+</head>
+<body class="bg-light">
+
+  <div class="container my-5" style="max-width: 900px;">
+    <!-- 헤더 구역 -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h1 class="h3 mb-0 text-dark fw-bold">💰 가계부 지출 내역</h1>
+      <a href="/expense/write" class="btn btn-primary fw-semibold shadow-sm"><i class="fa-solid fa-circle-plus"></i> 새 지출 내역</a>
+    </div>
+
+    <!-- 총합계 요약 카드 구역 -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-body p-4 bg-white rounded">
+        <span class="text-secondary small fw-medium text-uppercase tracking-wider">총 누적 지출 금액</span>
+        <div class="display-6 text-danger fw-bold mt-1">
+          <span class="fs-4 fw-normal text-dark"><%= total.toLocaleString() %>원</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 데이터 테이블 카드 -->
+    <div class="card border-0 shadow-sm overflow-hidden">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-dark text-uppercase fs-7">
+            <tr>
+              <th scope="col" class="ps-4">날짜</th>
+              <th scope="col">분류</th>
+              <th scope="col">내역</th>
+              <th scope="col">금액</th>
+              <th scope="col" class="pe-4">상세 설명</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (items.length === 0) { %>
+              <tr>
+                <td colspan="5" class="text-center py-5 text-secondary">
+                  기록된 지출 내역이 없습니다. 새로운 지출을 등록해 보세요!
+                </td>
+              </tr>
+            <% } else { %>
+              <% items.forEach(function(item) { %>
+                <tr>
+                  <td class="ps-4 text-secondary small"><%= item.date %></td>
+                  <td>
+                    <!-- 카테고리별로 이쁘게 배지(Badge) 처리 -->
+                    <span class="badge bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle rounded-pill px-3">
+                      <%= item.category %>
+                    </span>
+                  </td>
+                  <td><span class="fw-semibold text-dark"><%= item.event %></span></td>
+                  <td class="text-danger fw-semibold"><%= item.price.toLocaleString() %>원</td>
+                  <td class="text-muted pe-4 small text-truncate" style="max-width: 200px;"><%= item.explanation %></td>
+                </tr>
+              <% }); %>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- 💡 부트스트랩 자바스크립트 CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

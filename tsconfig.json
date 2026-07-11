@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",                          /* 컴파일될 JavaScript 버전 */
+    "module": "Node16",                        /* 생성될 모듈 시스템 설정 */
+    "moduleResolution": "Node16",                  /* 모듈 해석 방식 */
+    "strict": true, 
+    "rootDir": "./src",                             /* 엄격한 타입 검사 활성화 */
+    "esModuleInterop": true,                     /* CommonJS 모듈을 ES 모듈처럼 import 가능하게 설정 */
+    "skipLibCheck": true,                        /* 선언 파일(*.d.ts)의 타입 검사 생략 */
+    "forceConsistentCasingInFileNames": true,    /* 파일 이름의 대소문자 구분 강제 */
+    "outDir": "./dist"                           /* 빌드된 JS 파일이 저장될 경로 */
+  },
+  "include": ["src/**/*"]                        /* TS 소스 코드가 위치할 경로 (상황에 맞게 조절) */
+}
