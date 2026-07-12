@@ -50,7 +50,7 @@ connectDB().then(() => {
 });
 
 
-
+//홈페이지 api
 app.get('/', (req: Request, res: Response) => {
   try {
     res.render('home.ejs');
@@ -60,13 +60,16 @@ app.get('/', (req: Request, res: Response) => {
   }
 });
 
+
 interface moneyInfo{
   event : string,
   category : string,
   price : number,
   date : string,
-  explanation  : string
+  explanation  : string,
+  isFixed : boolean
 }
+//지출 인터페이스
 interface expenseInfo extends moneyInfo{
   moneyType : 'expense'
 }
@@ -83,17 +86,25 @@ app.get('/expense/write', (req: Request, res: Response) => {
   }
 });
 
+//가계부 지출 내역 작성 api
 app.post('/expense/post',async(req:Request,res : Response)=>{
   try {
+  console.log(req.body)
+  let fix : boolean=false;
+  if(req.body.isFixed==='on'){
+    fix=true;
+  }
   let result : expenseInfo = {
     event : req.body.event,
     category : req.body.category,
     price : Number(req.body.price),
     date : req.body.date,
     explanation  : req.body.explanation,
-    moneyType : 'expense'
+    moneyType : 'expense',
+    isFixed : fix
   }
   console.log(result);
+  //안에 내용이 잘 들어 있는지 이상한 지 확인 후 데이터 집어넣기
   if(result.category!=undefined && result.event!=undefined && result.price>0 && result.date!='' && result.explanation!=''){
     await db.collection('transection').insertOne(result);
     res.redirect('/expense/list')
@@ -105,10 +116,26 @@ app.post('/expense/post',async(req:Request,res : Response)=>{
   }
 })
 
+//지출 내역 api
 app.get('/expense/list',async(req:Request,res:Response)=>{
-  let result :expenseInfo[] = await db.collection<expenseInfo>('transection').find({moneyType : 'expense'}).toArray();
+  try {
+    let result :expenseInfo[] = await db.collection<expenseInfo>('transection').find({moneyType : 'expense'}).toArray();
   const total :number = result.reduce((sum, item) => sum + item.price, 0);
   console.log(result);
   res.render('expenseList.ejs',{items : result, total : total});
+  } catch (error) {
+    console.log(error)
+    res.send(400);
+  }
 })
-  
+
+//고정 지출 내역 api
+app.get('/expense/fixedCost',async(req:Request,res:Response)=>{
+  try {
+    let result :expenseInfo[] = await db.collection<expenseInfo>('transection').find({isFixed : true}).toArray();
+     const total :number = result.reduce((sum, item) => sum + item.price, 0);
+    res.render('expenseFixed.ejs',{items : result,total : total});
+  } catch (error) {
+    console.log(error)
+  }
+})
