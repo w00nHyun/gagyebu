@@ -2,3 +2,57 @@ body {
   margin: 0;
 }
 
+
+/* home.ejs css */
+.custom-container {
+  max-width: 900px;
+  margin: 0 auto;
+  margin-top: 5rem;
+}
+
+.menu-card {
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  background-color: #ffffff;
+  border-radius: 12px;
+}
+
+.menu-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
+}
+
+.menu-icon {
+  width: 55px;
+  height: 55px;
+  font-size: 24px;
+  border-radius: 16px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.menu-title {
+  font-size: 15px;
+}
+
+/* expenselist.ejs css */
+
+.custom-switch:checked {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+  }
+  
+  /* 포커스 링 색상도 파란색 톤으로 조절 */
+  .custom-switch:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+  }
+  
+  /* 스위치 크기 살짝 키워서 터치하기 편하게 */
+ .custom-switch {
+    width: 3.5em;
+    height: 1.8em;
+    cursor: pointer;
+  }

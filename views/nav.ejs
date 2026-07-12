@@ -1,7 +1,36 @@
- <nav class="navbar bg-body-tertiary">
-  <div class="container-fluid">
-    <a class="navbar-brand" href="/">가계부</a>
-    <form class="d-flex" role="search">
-    </form>
+<nav class="navbar navbar-expand navbar-light bg-white border-bottom sticky-top py-3">
+  <div class="container custom-nav-container">
+    
+    <!-- 좌측 로고 구역 -->
+    <a class="navbar-brand d-flex align-items-center fs-5 text-dark" href="/">
+      <span class="me-2" style="color: #ff7e36;">👛</span>
+      <strong class="fw-bold">가계부</strong>
+    </a>
+
+    <!-- 우측 메뉴 구역 -->
+    <!-- <div class="d-flex align-items-center gap-3">
+      <a href="/expense/list" class="nav-link text-secondary fw-semibold small">내역 보기</a>
+      <a href="/expense/write" class="btn text-white fw-semibold d-flex align-items-center px-3 py-1.5 rounded-pill shadow-sm" style="background-color: #ff7e36; border: none; font-size: 14px;">
+        <span class="me-1" style="font-size: 16px; font-weight: bold; line-height: 1;">⊕</span> 새 지출
+      </a>
+    </div> -->
+
   </div>
 </nav>
+
+<style>
+  .custom-nav-container {
+    max-width: 900px;
+    margin: 0 auto; /* 모바일 화면에서는 정중앙 */
+  }
+
+  /* 태블릿 및 PC 전체화면에서 정렬 미세조정 */
+  @media (min-width: 768px) {
+    .custom-nav-container {
+      /* 💡 기존 10%에서 18%로 올려서 조금 더 오른쪽으로 이동시켰습니다. */
+      /* 눈으로 보시면서 15%, 20%, 25% 등으로 조금씩 바꿔가며 맞춰보세요! */
+      margin-left: 18% !important; 
+      margin-right: auto !important;
+    }
+  }
+</style>
