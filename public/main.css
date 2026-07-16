@@ -4,6 +4,7 @@ body {
 
 
 /* home.ejs css */
+
 .custom-container {
   max-width: 900px;
   margin: 0 auto;
@@ -37,22 +38,22 @@ body {
   font-size: 15px;
 }
 
-/* expenselist.ejs css */
+/* expensewrite.ejs css */
 
 .custom-switch:checked {
-    background-color: #0d6efd;
-    border-color: #0d6efd;
-  }
-  
-  /* 포커스 링 색상도 파란색 톤으로 조절 */
-  .custom-switch:focus {
-    border-color: #0d6efd;
-    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
-  }
-  
-  /* 스위치 크기 살짝 키워서 터치하기 편하게 */
- .custom-switch {
-    width: 3.5em;
-    height: 1.8em;
-    cursor: pointer;
-  }
+  background-color: #0d6efd;
+  border-color: #0d6efd;
+}
+
+/* 포커스 링 색상도 파란색 톤으로 조절 */
+.custom-switch:focus {
+  border-color: #0d6efd;
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+/* 스위치 크기 살짝 키워서 터치하기 편하게 */
+.custom-switch {
+  width: 5em;
+  height: 1.2em;
+  cursor: pointer;
+}
