@@ -35,9 +35,11 @@
                     <select class="form-select" id="group" name="event">
                         <option selected disabled>선택하세요...</option>
                         <option value="개인지출">개인지출 (기본)</option>
-                        <option value="여행경비">여행 경비</option>
-                        <option value="모임비용">모임 비용</option>
-                        <option value="경조사">경조사</option>
+                        <option value="친구">친구</option>
+                        <option value="데이트">데이트</option>
+                        <option value="지인">지인</option>
+                        <option value="가족">가족</option>
+                        <option value="비즈니스">비즈니스</option> <!-- value 오류 수정 -->
                         <option value="기타이벤트">기타 이벤트</option>
                     </select>
                 </div>
@@ -52,7 +54,7 @@
                         <option value="문화/여가">문화/여가</option>
                         <option value="구독비">구독비</option>
                         <option value="쇼핑비">쇼핑비</option>
-                        <option value="쇼핑비">병원비</option>
+                        <option value="병원비">병원비</option>
                         <option value="기타">기타</option>
                     </select>
                 </div>
@@ -89,7 +91,7 @@
                         <option value="수요일">수요일</option>
                         <option value="목요일">목요일</option>
                         <option value="금요일">금요일</option>
-                        <option value="토요일">토요일</option>
+                        <option value="토요일">토요일</option>z
                         <option value="일요일">일요일</option>
                     </select>
                 </div>
@@ -108,119 +110,119 @@
         </div>
 
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-       <script>
-    const isFixedCheckbox = document.getElementById('isFixedExpense');
-    const dateGroup = document.getElementById('dateGroup');
-    const fixedCycleGroup = document.getElementById('fixedCycleGroup');
-    const fixedDayGroup = document.getElementById('fixedDayGroup');
-    const fixedCycleSelect = document.getElementById('fixedCycle');
-    const fixedDayNumberInput = document.getElementById('fixedDayNumber');
-    const fixedWeekdaySelect = document.getElementById('fixedWeekdaySelect');
-    const fixedDayLabel = document.getElementById('fixedDayLabel');
+        <script>
+            const isFixedCheckbox = document.getElementById('isFixedExpense');
+            const dateGroup = document.getElementById('dateGroup');
+            const fixedCycleGroup = document.getElementById('fixedCycleGroup');
+            const fixedDayGroup = document.getElementById('fixedDayGroup');
+            const fixedCycleSelect = document.getElementById('fixedCycle');
+            const fixedDayNumberInput = document.getElementById('fixedDayNumber');
+            const fixedWeekdaySelect = document.getElementById('fixedWeekdaySelect');
+            const fixedDayLabel = document.getElementById('fixedDayLabel');
 
-    function updateFixedSection() {
-        const isFixed = isFixedCheckbox.checked;
-        dateGroup.classList.toggle('d-none', isFixed);
-        fixedCycleGroup.classList.toggle('d-none', !isFixed);
-        fixedDayGroup.classList.toggle('d-none', !isFixed);
+            function updateFixedSection() {
+                const isFixed = isFixedCheckbox.checked;
+                dateGroup.classList.toggle('d-none', isFixed);
+                fixedCycleGroup.classList.toggle('d-none', !isFixed);
+                fixedDayGroup.classList.toggle('d-none', !isFixed);
 
-        if (!isFixed) {
-            fixedCycleSelect.value = '';
-            fixedDayNumberInput.value = '';
-            fixedWeekdaySelect.value = '';
-            fixedDayLabel.textContent = '일자/요일';
-            fixedDayNumberInput.classList.remove('d-none');
-            fixedDayNumberInput.disabled = true;
-            fixedWeekdaySelect.classList.add('d-none');
-            fixedWeekdaySelect.disabled = true;
-            fixedDayNumberInput.placeholder = '주기를 먼저 선택하세요';
-        } else {
-            updateFixedDayField();
-        }
-    }
-
-    function updateFixedDayField() {
-        if (fixedCycleSelect.value === '매월') {
-            fixedDayLabel.textContent = '일자';
-            fixedDayNumberInput.classList.remove('d-none');
-            fixedDayNumberInput.disabled = false;
-            fixedWeekdaySelect.classList.add('d-none');
-            fixedWeekdaySelect.disabled = true;
-            fixedDayNumberInput.placeholder = '1부터 31까지 숫자를 입력하세요';
-        } else if (fixedCycleSelect.value === '매주') {
-            fixedDayLabel.textContent = '요일';
-            fixedDayNumberInput.classList.add('d-none');
-            fixedDayNumberInput.disabled = true;
-            fixedWeekdaySelect.classList.remove('d-none');
-            fixedWeekdaySelect.disabled = false;
-        } else {
-            fixedDayLabel.textContent = '일자/요일';
-            fixedDayNumberInput.classList.remove('d-none');
-            fixedDayNumberInput.disabled = true;
-            fixedWeekdaySelect.classList.add('d-none');
-            fixedWeekdaySelect.disabled = true;
-            fixedDayNumberInput.placeholder = '주기를 먼저 선택하세요';
-        }
-    }
-
-    isFixedCheckbox.addEventListener('change', updateFixedSection);
-    fixedCycleSelect.addEventListener('change', updateFixedDayField);
-    document.addEventListener('DOMContentLoaded', updateFixedSection);
-
-    // 폼 제출 비동기 처리 수정본
-    document.getElementById('expenseForm').addEventListener('submit', async (e) => {
-        e.preventDefault(); 
-
-        // [수정] HTML 내부의 실제 id를 매칭하여 데이터를 정확히 수집합니다.
-        const isFixed = isFixedCheckbox.checked;
-        
-        // 매월이면 숫자 일자, 매주면 요일 선택 값을 가져옵니다.
-        let fixedDayOrWeek = '';
-        if (isFixed) {
-            fixedDayOrWeek = fixedCycleSelect.value === '매월' 
-                ? fixedDayNumberInput.value 
-                : fixedWeekdaySelect.value;
-        }
-
-        const formData = {
-            isFixed: isFixed ? 'on' : 'off',
-            event: document.getElementById('group').value, // HTML에 id="group"으로 되어있음
-            category: document.getElementById('category').value,
-            price: document.getElementById('amount').value, // HTML에 id="amount"로 되어있음
-            date: document.getElementById('date').value,
-            fixedCycle: fixedCycleSelect.value,
-            fixedDayOrWeek: fixedDayOrWeek,
-            explanation: document.getElementById('description').value // HTML에 id="description"으로 되어있음
-        };
-
-        try {
-            // [주의] '/your-route-path' 대신 실제 Node.js 서버의 라우터 주소를 입력해야 합니다.
-            const response = await fetch('/expense/post', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData)
-            });
-
-            const result = await response.json(); 
-
-            if (!result.success) {
-                // [수정] 백엔드에서 보낸 errors 객체 중 첫 번째 에러 메시지를 꺼내서 보여줍니다.
-                const errorMessages = Object.values(result.errors);
-                if (errorMessages.length > 0) {
-                    alert(errorMessages[0]);
+                if (!isFixed) {
+                    fixedCycleSelect.value = '';
+                    fixedDayNumberInput.value = '';
+                    fixedWeekdaySelect.value = '';
+                    fixedDayLabel.textContent = '일자/요일';
+                    fixedDayNumberInput.classList.remove('d-none');
+                    fixedDayNumberInput.disabled = true;
+                    fixedWeekdaySelect.classList.add('d-none');
+                    fixedWeekdaySelect.disabled = true;
+                    fixedDayNumberInput.placeholder = '주기를 먼저 선택하세요';
                 } else {
-                    alert(result.message || '유효성 검사에 실패했습니다.');
+                    updateFixedDayField();
                 }
-            } else {
-                alert('지출 내역이 성공적으로 저장되었습니다.');
-                window.location.href = '/expense/list';
             }
-        } catch (error) {
-            console.error('서버 통신 에러:', error);
-            alert('서버와 연결할 수 없습니다.');
-        }
-    });
-</script>
+
+            function updateFixedDayField() {
+                if (fixedCycleSelect.value === '매월') {
+                    fixedDayLabel.textContent = '일자';
+                    fixedDayNumberInput.classList.remove('d-none');
+                    fixedDayNumberInput.disabled = false;
+                    fixedWeekdaySelect.classList.add('d-none');
+                    fixedWeekdaySelect.disabled = true;
+                    fixedDayNumberInput.placeholder = '1부터 31까지 숫자를 입력하세요';
+                } else if (fixedCycleSelect.value === '매주') {
+                    fixedDayLabel.textContent = '요일';
+                    fixedDayNumberInput.classList.add('d-none');
+                    fixedDayNumberInput.disabled = true;
+                    fixedWeekdaySelect.classList.remove('d-none');
+                    fixedWeekdaySelect.disabled = false;
+                } else {
+                    fixedDayLabel.textContent = '일자/요일';
+                    fixedDayNumberInput.classList.remove('d-none');
+                    fixedDayNumberInput.disabled = true;
+                    fixedWeekdaySelect.classList.add('d-none');
+                    fixedWeekdaySelect.disabled = true;
+                    fixedDayNumberInput.placeholder = '주기를 먼저 선택하세요';
+                }
+            }
+
+            isFixedCheckbox.addEventListener('change', updateFixedSection);
+            fixedCycleSelect.addEventListener('change', updateFixedDayField);
+            document.addEventListener('DOMContentLoaded', updateFixedSection);
+
+            // 폼 제출 비동기 처리 수정본
+            document.getElementById('expenseForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                // [수정] HTML 내부의 실제 id를 매칭하여 데이터를 정확히 수집합니다.
+                const isFixed = isFixedCheckbox.checked;
+
+                // 매월이면 숫자 일자, 매주면 요일 선택 값을 가져옵니다.
+                let fixedDayOrWeek = '';
+                if (isFixed) {
+                    fixedDayOrWeek = fixedCycleSelect.value === '매월'
+                        ? fixedDayNumberInput.value
+                        : fixedWeekdaySelect.value;
+                }
+
+                const formData = {
+                    isFixed: isFixed ? 'on' : 'off',
+                    event: document.getElementById('group').value, // HTML에 id="group"으로 되어있음
+                    category: document.getElementById('category').value,
+                    price: document.getElementById('amount').value, // HTML에 id="amount"로 되어있음
+                    date: document.getElementById('date').value,
+                    fixedCycle: fixedCycleSelect.value,
+                    fixedDayOrWeek: fixedDayOrWeek,
+                    explanation: document.getElementById('description').value // HTML에 id="description"으로 되어있음
+                };
+
+                try {
+                    // [주의] '/your-route-path' 대신 실제 Node.js 서버의 라우터 주소를 입력해야 합니다.
+                    const response = await fetch('/expense/post', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(formData)
+                    });
+
+                    const result = await response.json();
+
+                    if (!result.success) {
+                        // [수정] 백엔드에서 보낸 errors 객체 중 첫 번째 에러 메시지를 꺼내서 보여줍니다.
+                        const errorMessages = Object.values(result.errors);
+                        if (errorMessages.length > 0) {
+                            alert(errorMessages[0]);
+                        } else {
+                            alert(result.message || '유효성 검사에 실패했습니다.');
+                        }
+                    } else {
+                        alert('지출 내역이 성공적으로 저장되었습니다.');
+                        window.location.href = '/expense/list';
+                    }
+                } catch (error) {
+                    console.error('서버 통신 에러:', error);
+                    alert('서버와 연결할 수 없습니다.');
+                }
+            });
+        </script>
 </body>
 
 </html>

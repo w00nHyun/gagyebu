@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>가계부 홈</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="/main.css" rel="stylesheet">
+</head>
+
+<body class="bg-light">
+
+  <!-- 상단 바 불러오기 -->
+  <%- include('nav.ejs') %>
+    <div class="container custom-container main-content mx-auto">
+      <h3 class="fw-bold mb-4 text-dark">📊 지출 분석 리포트</h3>
+
+      <div class="row g-4">
+        <!-- 1. 그룹/이벤트별 지출 (원형 그래프) -->
+        <div class="col-md-6">
+          <div class="card border-0 shadow-sm rounded-3 h-100">
+            <div class="card-body p-4">
+              <h5 class="card-title fw-bold text-secondary mb-3">그룹/이벤트별 지출</h5>
+              <div class="chart-container">
+                <canvas id="eventChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. 카테고리별 지출 (원형 그래프) -->
+        <div class="col-md-6">
+          <div class="card border-0 shadow-sm rounded-3 h-100">
+            <div class="card-body p-4">
+              <h5 class="card-title fw-bold text-secondary mb-3">카테고리별 지출</h5>
+              <div class="chart-container">
+                <canvas id="categoryChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. 고정비 vs 변동비 비교 (막대 그래프) -->
+        <div class="col-12">
+          <div class="card border-0 shadow-sm rounded-3">
+            <div class="card-body p-4">
+              <h5 class="card-title fw-bold text-secondary mb-3">고정비 vs 변동비 비율</h5>
+              <div class="chart-container-bar">
+                <canvas id="fixedChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 💡 Chart.js CDN 불러오기 (head에 없다면 추가) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+      /* 차트가 깨지지 않고 비율을 유지하도록 컨테이너 크기 조절 */
+      .chart-container {
+        position: relative;
+        margin: auto;
+        height: 280px;
+        width: 100%;
+      }
+
+      .chart-container-bar {
+        position: relative;
+        margin: auto;
+        height: 300px;
+        width: 100%;
+      }
+    </style>
+
+
+    </script>
+
+
+    <style>
+      /* 💡 768px 이상이든 이하든 무조건 가로 900px 한도 내에서 가운데 정렬 고정 */
+    </style>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      // 1. 그룹/이벤트별 차트 (Doughnut - 도넛 원형)
+
+      const data = <%- JSON.stringify(chartData) %>;
+
+      const ctxEvent = document.getElementById('eventChart').getContext('2d');
+      new Chart(ctxEvent, {
+        type: 'doughnut',
+        data: {
+          labels: data.eventLabel, // 실제 DB 데이터 연동 시 교체될 영역
+          datasets: [{
+            data: data.eventData,
+            backgroundColor: [
+              '#0d6efd', // Blue (기존 - 주 지출/개인지출 추천)
+              '#6c757d', // Gray (기존 - 기타/미분류 추천)
+              '#198754', // Green (초록)
+              '#dc3545', // Red (빨강)
+              '#ffc107', // Yellow (노랑)
+              '#0dcaf0', // Cyan (하늘)
+              '#6f42c1'  // Purple (보라)
+            ],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom' }
+          }
+        }
+      });
+
+      // 2. 카테고리별 차트 (Pie - 꽉 찬 원형)
+      const ctxCategory = document.getElementById('categoryChart').getContext('2d');
+      new Chart(ctxCategory, {
+        type: 'pie',
+        data: {
+          labels: data.categoryLabel, //서버 렌더링한 라벨
+          datasets: [{
+            data: data.categoryData, //서버렌더링한 카테고리 데이터
+            backgroundColor: [
+              '#20c997', // Teal (기존)
+              '#ffc107', // Yellow (기존)
+              '#d63384', // Pink (기존)
+              '#0dcaf0', // Cyan (기존)
+              '#6f42c1', // Purple (보라)
+              '#fd7e14', // Orange (오렌지)
+              '#198754', // Green (초록)
+              '#6c757d'  // Gray (회색 - 기타/개인지출용)
+            ],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom' }
+          }
+        }
+      });
+
+      // 3. 고정비 vs 변동비 비교 차트 (Bar - 입체감 있는 파스텔 막대)
+      const ctxFixed = document.getElementById('fixedChart').getContext('2d');
+      new Chart(ctxFixed, {
+        type: 'bar',
+        data: {
+          labels: ['정기 고정비', '일반 변동비'],
+          datasets: [{
+            label: '지출 금액 (원)',
+            data: data.fixData, // 고정비 토글 켠 데이터 vs 안 켠 데이터 합계
+            backgroundColor: [
+              'rgba(13, 110, 253, 0.75)', // 파란색 톤 고정비
+              'rgba(108, 117, 125, 0.75)' // 회색 톤 변동비
+            ],
+            borderColor: ['#0d6efd', '#6c757d'],
+            borderWidth: 1,
+            borderRadius: 8 // 막대 끝 모서리를 둥글게 깎아서 트렌디하게 연출
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: function (value) { return value.toLocaleString() + '원'; } // 원화 쉼표 포맷팅
+              }
+            }
+          },
+          plugins: {
+            legend: { display: false } // 단일 데이터셋이므로 범례 생략하여 깔끔하게 처리
+          }
+        }
+      });
+    </script>
+</body>
+
+</html>
