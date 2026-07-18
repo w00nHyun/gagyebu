@@ -143,7 +143,7 @@ app.post('/expense/post', vaildateExpense, async (req: Request, res: Response) =
     const result: expenseFixInfo | expenseNonFixInfo = fix
       ? { ...baseInfo, fixedCycle, fixedDayOrWeek, }
       : { ...baseInfo, date, moneyType: 'expense' };
-
+    await db.collection('transection').insertOne(result);
     res.status(200).json({
       success: true,
       message: "저장 완료"
@@ -178,3 +178,95 @@ app.get('/expense/fixedCost/list', async (req: Request, res: Response) => {
     console.log(error)
   }
 })
+interface GroupStat<T> {
+  _id: T;
+  total: number;
+}
+
+/**  고정값 여부에 따른 값을 주는 함수 */
+const fixEval = (fixStat: GroupStat<boolean>[]): number[] => {
+  let ret: number[] = [0, 0];
+
+  fixStat.forEach(element => {
+    if (element._id) {
+      ret[0] = element.total;
+    } else {
+      ret[1] = element.total;
+    }
+    // forEach 안에서의 return은 아무런 효과가 없으므로 지워야 합니다.
+  });
+  
+  return ret; // 함수가 최종적으로 ret 배열을 반환해야 합니다.
+}
+
+function mapStatsToLabels(statsArray: { _id: string; total: number }[], labels: string[]): number[] {
+  const statsMap: Record<string, number> = {};
+  
+  // forEach를 사용해 빈 객체(statsMap)에 값 채워넣기
+  statsArray.forEach(item => {
+    if (item._id !== null && item._id !== undefined) {
+      statsMap[String(item._id)] = item.total;
+    }
+  });
+
+  return labels.map(label => statsMap[label] || 0);
+}
+
+//예산 설정 api 
+app.get('/stat',async(req:Request,res:Response)=>{
+  
+  //통계 및 분석 페이지에 나와야 되는 화면 //여기에 목표도 설정하면 됨. 차트로 어떤 카테고리를 어떤 비율로 했는지 //카테고리랑 그룹만 차트화 시키면 됨 
+  //  지출 현황을 보여주고 나의 목표보다 얼마나 더 썼는지 더 안썻는지 등을 보여줌.
+  //1. 페이지에 가져와야할 정보 (그룹,이벤트),(카테고리), 가격 돈, 고정비인지에 대한 db 내용 다 가져옴. 
+  //2. 차트 라이브러리 가져와서 저기에다가 내용집어넣기. 카테고리 별로 나누기는 어케하는게 좋을까에 대해 고민을 좀 더 하긴 해야할 듯
+  //통계는 1달단위가 깔끔해보임. 
+  try {
+    let fixData : number[] =[];
+    let categoryData : number[];
+    let eventData : number[];
+    let categoryLabel : string[]=['식비','교통비','주거/통신','문화/여가','구독비','쇼핑비','병원비','기타'];
+    let eventLabel : string[]=['개인지출','친구','데이트','지인','가족','비즈니스','기타이벤트'];
+    const [stats] = await db.collection('transection').aggregate([
+      {
+        $match: {}
+      },
+      
+      // 2단계: $facet으로 다중 집계 시작
+      {
+        $facet: {
+          // 갈래 1: 카테고리별 집계
+          categoryStats: [
+            { $group: { _id: "$category", total: { $sum: "$price" } } }
+          ],
+          // 갈래 2: 이벤트(그룹)별 집계
+          eventStats: [ 
+            { $group: { _id: "$event", total: { $sum: "$price" } } } // 필드명이 group인지 event인지 확인 필요
+          ],
+          // 갈래 3: 고정비 여부별 집계 (true/false)
+          fixedStats: [
+            { $group: { _id: "$isFixed", total: { $sum: "$price" } } }
+          ]
+        }
+      }
+    ]).toArray();
+  
+  fixData = fixEval(stats.fixedStats);
+  categoryData=mapStatsToLabels(stats.categoryStats,categoryLabel);
+  eventData=mapStatsToLabels(stats.eventStats,eventLabel);
+ 
+  const chartData={
+    fixData : fixData,
+    categoryData : categoryData,
+    eventData : eventData,
+    categoryLabel : categoryLabel,
+    eventLabel : eventLabel
+  }
+  res.render('expenseChart.ejs',{chartData : chartData});
+  
+  } catch (error) {
+    console.log(error)
+  }
+})
+
+
+//삭제 api , 수정 api //expense/write  api 
