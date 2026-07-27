@@ -71,6 +71,8 @@
                     <input type="date" class="form-control" id="date" name="date">
                 </div>
 
+              
+
                 <div class="input-group mb-3 d-none" id="fixedCycleGroup">
                     <label class="input-group-text" for="fixedCycle">정기 주기</label>
                     <select class="form-select" id="fixedCycle" name="fixedCycle">
@@ -80,6 +82,10 @@
                     </select>
                 </div>
 
+                  <div class="input-group mb-3 d-none" id="fixedDateGroup">
+                    <span class="input-group-text">시작 날짜</span>
+                    <input type="date" class="form-control" id="fixedStartDate" name="date">
+                </div>
                 <div class="input-group mb-3 d-none" id="fixedDayGroup">
                     <label class="input-group-text" id="fixedDayLabel" for="fixedDayNumber">일자/요일</label>
                     <input type="number" class="form-control" id="fixedDayNumber" name="fixedDayOrWeek" min="1" max="31"
@@ -91,7 +97,7 @@
                         <option value="수요일">수요일</option>
                         <option value="목요일">목요일</option>
                         <option value="금요일">금요일</option>
-                        <option value="토요일">토요일</option>z
+                        <option value="토요일">토요일</option>
                         <option value="일요일">일요일</option>
                     </select>
                 </div>
@@ -113,6 +119,7 @@
         <script>
             const isFixedCheckbox = document.getElementById('isFixedExpense');
             const dateGroup = document.getElementById('dateGroup');
+            const fixedDateGroup = document.getElementById('fixedDateGroup');
             const fixedCycleGroup = document.getElementById('fixedCycleGroup');
             const fixedDayGroup = document.getElementById('fixedDayGroup');
             const fixedCycleSelect = document.getElementById('fixedCycle');
@@ -123,6 +130,7 @@
             function updateFixedSection() {
                 const isFixed = isFixedCheckbox.checked;
                 dateGroup.classList.toggle('d-none', isFixed);
+                fixedDateGroup.classList.toggle('d-none', !isFixed);
                 fixedCycleGroup.classList.toggle('d-none', !isFixed);
                 fixedDayGroup.classList.toggle('d-none', !isFixed);
 
@@ -130,6 +138,7 @@
                     fixedCycleSelect.value = '';
                     fixedDayNumberInput.value = '';
                     fixedWeekdaySelect.value = '';
+                    document.getElementById('fixedStartDate').value = '';
                     fixedDayLabel.textContent = '일자/요일';
                     fixedDayNumberInput.classList.remove('d-none');
                     fixedDayNumberInput.disabled = true;
@@ -186,17 +195,16 @@
 
                 const formData = {
                     isFixed: isFixed ? 'on' : 'off',
-                    event: document.getElementById('group').value, // HTML에 id="group"으로 되어있음
+                    event: document.getElementById('group').value,
                     category: document.getElementById('category').value,
-                    price: document.getElementById('amount').value, // HTML에 id="amount"로 되어있음
-                    date: document.getElementById('date').value,
+                    price: document.getElementById('amount').value,
+                    date: isFixed ? document.getElementById('fixedStartDate').value : document.getElementById('date').value,
                     fixedCycle: fixedCycleSelect.value,
                     fixedDayOrWeek: fixedDayOrWeek,
-                    explanation: document.getElementById('description').value // HTML에 id="description"으로 되어있음
+                    explanation: document.getElementById('description').value
                 };
 
                 try {
-                    // [주의] '/your-route-path' 대신 실제 Node.js 서버의 라우터 주소를 입력해야 합니다.
                     const response = await fetch('/expense/post', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
