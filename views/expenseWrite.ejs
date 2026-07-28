@@ -73,33 +73,10 @@
 
               
 
-                <div class="input-group mb-3 d-none" id="fixedCycleGroup">
-                    <label class="input-group-text" for="fixedCycle">정기 주기</label>
-                    <select class="form-select" id="fixedCycle" name="fixedCycle">
-                        <option selected disabled>선택하세요...</option>
-                        <option value="매월">매월</option>
-                        <option value="매주">매주</option>
-                    </select>
-                </div>
 
-                  <div class="input-group mb-3 d-none" id="fixedDateGroup">
+                <div class="input-group mb-3 d-none" id="fixedDateGroup">
                     <span class="input-group-text">시작 날짜</span>
-                    <input type="date" class="form-control" id="fixedStartDate" name="date">
-                </div>
-                <div class="input-group mb-3 d-none" id="fixedDayGroup">
-                    <label class="input-group-text" id="fixedDayLabel" for="fixedDayNumber">일자/요일</label>
-                    <input type="number" class="form-control" id="fixedDayNumber" name="fixedDayOrWeek" min="1" max="31"
-                        placeholder="1부터 31까지 숫자를 입력하세요">
-                    <select class="form-select d-none" id="fixedWeekdaySelect" name="fixedDayOrWeek" disabled>
-                        <option selected disabled>요일을 선택하세요...</option>
-                        <option value="월요일">월요일</option>
-                        <option value="화요일">화요일</option>
-                        <option value="수요일">수요일</option>
-                        <option value="목요일">목요일</option>
-                        <option value="금요일">금요일</option>
-                        <option value="토요일">토요일</option>
-                        <option value="일요일">일요일</option>
-                    </select>
+                    <input type="date" class="form-control" id="fixedStartDate" name="startDate">
                 </div>
 
                 <div class="input-group mb-4">
@@ -120,62 +97,20 @@
             const isFixedCheckbox = document.getElementById('isFixedExpense');
             const dateGroup = document.getElementById('dateGroup');
             const fixedDateGroup = document.getElementById('fixedDateGroup');
-            const fixedCycleGroup = document.getElementById('fixedCycleGroup');
-            const fixedDayGroup = document.getElementById('fixedDayGroup');
-            const fixedCycleSelect = document.getElementById('fixedCycle');
-            const fixedDayNumberInput = document.getElementById('fixedDayNumber');
-            const fixedWeekdaySelect = document.getElementById('fixedWeekdaySelect');
-            const fixedDayLabel = document.getElementById('fixedDayLabel');
+            const fixedStartDateInput = document.getElementById('fixedStartDate');
 
             function updateFixedSection() {
                 const isFixed = isFixedCheckbox.checked;
                 dateGroup.classList.toggle('d-none', isFixed);
                 fixedDateGroup.classList.toggle('d-none', !isFixed);
-                fixedCycleGroup.classList.toggle('d-none', !isFixed);
-                fixedDayGroup.classList.toggle('d-none', !isFixed);
 
                 if (!isFixed) {
-                    fixedCycleSelect.value = '';
-                    fixedDayNumberInput.value = '';
-                    fixedWeekdaySelect.value = '';
-                    document.getElementById('fixedStartDate').value = '';
-                    fixedDayLabel.textContent = '일자/요일';
-                    fixedDayNumberInput.classList.remove('d-none');
-                    fixedDayNumberInput.disabled = true;
-                    fixedWeekdaySelect.classList.add('d-none');
-                    fixedWeekdaySelect.disabled = true;
-                    fixedDayNumberInput.placeholder = '주기를 먼저 선택하세요';
-                } else {
-                    updateFixedDayField();
-                }
-            }
-
-            function updateFixedDayField() {
-                if (fixedCycleSelect.value === '매월') {
-                    fixedDayLabel.textContent = '일자';
-                    fixedDayNumberInput.classList.remove('d-none');
-                    fixedDayNumberInput.disabled = false;
-                    fixedWeekdaySelect.classList.add('d-none');
-                    fixedWeekdaySelect.disabled = true;
-                    fixedDayNumberInput.placeholder = '1부터 31까지 숫자를 입력하세요';
-                } else if (fixedCycleSelect.value === '매주') {
-                    fixedDayLabel.textContent = '요일';
-                    fixedDayNumberInput.classList.add('d-none');
-                    fixedDayNumberInput.disabled = true;
-                    fixedWeekdaySelect.classList.remove('d-none');
-                    fixedWeekdaySelect.disabled = false;
-                } else {
-                    fixedDayLabel.textContent = '일자/요일';
-                    fixedDayNumberInput.classList.remove('d-none');
-                    fixedDayNumberInput.disabled = true;
-                    fixedWeekdaySelect.classList.add('d-none');
-                    fixedWeekdaySelect.disabled = true;
-                    fixedDayNumberInput.placeholder = '주기를 먼저 선택하세요';
+                    document.getElementById('date').value = '';
+                    fixedStartDateInput.value = '';
                 }
             }
 
             isFixedCheckbox.addEventListener('change', updateFixedSection);
-            fixedCycleSelect.addEventListener('change', updateFixedDayField);
             document.addEventListener('DOMContentLoaded', updateFixedSection);
 
             // 폼 제출 비동기 처리 수정본
@@ -185,22 +120,15 @@
                 // [수정] HTML 내부의 실제 id를 매칭하여 데이터를 정확히 수집합니다.
                 const isFixed = isFixedCheckbox.checked;
 
-                // 매월이면 숫자 일자, 매주면 요일 선택 값을 가져옵니다.
-                let fixedDayOrWeek = '';
-                if (isFixed) {
-                    fixedDayOrWeek = fixedCycleSelect.value === '매월'
-                        ? fixedDayNumberInput.value
-                        : fixedWeekdaySelect.value;
-                }
-
+                // 고정비는 월 단위만 저장하므로 시작 날짜만 사용
                 const formData = {
                     isFixed: isFixed ? 'on' : 'off',
                     event: document.getElementById('group').value,
                     category: document.getElementById('category').value,
                     price: document.getElementById('amount').value,
-                    date: isFixed ? document.getElementById('fixedStartDate').value : document.getElementById('date').value,
-                    fixedCycle: fixedCycleSelect.value,
-                    fixedDayOrWeek: fixedDayOrWeek,
+                    date: isFixed ? fixedStartDateInput.value : document.getElementById('date').value,
+                    fixedCycle: isFixed ? '매월' : '',
+                    startDate: isFixed ? fixedStartDateInput.value : '',
                     explanation: document.getElementById('description').value
                 };
 
