@@ -2,11 +2,12 @@ import express, { Application, NextFunction, Request, Response } from 'express';
 import dotenv from 'dotenv';
 import passport from 'passport';
 import cookieParser from 'cookie-parser';
-import { connectDB,db,ObjectId } from './config/database';
+import { connectDB, db, ObjectId } from './config/database';
 import configPassport from './config/passport';
 import { emitWarning } from 'node:process';
 import authRouter from './routes/auth';
 import expenseRouter from './routes/expense';
+import requireAuth from './middleware/auth.middleware';
 dotenv.config();
 
 
@@ -29,14 +30,14 @@ app.use(passport.initialize());
 //req.user에다가 저장하기
 app.use((req: Request, res: Response, next: NextFunction) => {
   // 쿠키에 토큰이 없으면 그냥 통과 (비로그인 상태)
-   res.locals.user = null;
+  res.locals.user = null;
   if (!req.cookies?.token) {
     return next();
   }
 
   // 쿠키에 토큰이 있으면 passport로 검증해서 req.user 세팅!
   passport.authenticate('jwt', { session: false }, (err: any, user: any) => {
-   
+
     if (user) {
       req.user = user; // 여기서 모든 요청마다 req.user를 자동으로 채워줌!
       res.locals.user = user;
@@ -113,9 +114,13 @@ function mapStatsToLabels(statsArray: { _id: string; total: number }[], labels: 
 
   return labels.map(label => statsMap[label] || 0);
 }
+interface UserPayLoad{
+  username :string,
+  userId:string
+}
 
 //예산 설정 api 
-app.get('/stat', async (req: Request, res: Response) => {
+app.get('/stat', requireAuth, async (req: Request, res: Response) => {
 
   //통계 및 분석 페이지에 나와야 되는 화면 //여기에 목표도 설정하면 됨. 차트로 어떤 카테고리를 어떤 비율로 했는지 //카테고리랑 그룹만 차트화 시키면 됨 
   //  지출 현황을 보여주고 나의 목표보다 얼마나 더 썼는지 더 안썻는지 등을 보여줌.
@@ -123,6 +128,7 @@ app.get('/stat', async (req: Request, res: Response) => {
   //2. 차트 라이브러리 가져와서 저기에다가 내용집어넣기. 카테고리 별로 나누기는 어케하는게 좋을까에 대해 고민을 좀 더 하긴 해야할 듯
   //통계는 1달단위가 깔끔해보임. 
   try {
+    let user = req.user as UserPayLoad;
     let fixData: number[] = [];
     let categoryData: number[];
     let eventData: number[];
@@ -130,7 +136,9 @@ app.get('/stat', async (req: Request, res: Response) => {
     let eventLabel: string[] = ['개인지출', '친구', '데이트', '지인', '가족', '비즈니스', '기타이벤트'];
     const [stats] = await db.collection('transection').aggregate([
       {
-        $match: {}
+        $match: {
+          userId: user.userId
+        }
       },
 
       // 2단계: $facet으로 다중 집계 시작
@@ -175,7 +183,7 @@ app.get('/stat', async (req: Request, res: Response) => {
 
 
 //예산 설정 api
-app.get('/plan/budget', (req: Request, res: Response) => {
+app.get('/plan/budget', requireAuth, (req: Request, res: Response) => {
   try {
     res.render('budgetPlan.ejs');
   } catch (error) {
@@ -202,7 +210,7 @@ app.post('/plan/budget/save', async (req: Request, res: Response) => {
   }
 })
 
-app.get('/report', (req: Request, res: Response) => {
+app.get('/report', requireAuth, (req: Request, res: Response) => {
   res.render('report.ejs');
 })
 

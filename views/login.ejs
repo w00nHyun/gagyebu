@@ -3,34 +3,89 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>로그인화면</title>
+    <title>로그인 - 가계부</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="/main.css" rel="stylesheet">
 </head>
 <body class="bg-light">
-    <%- include('nav.ejs') %>
 
-    <div class="container mt-5" style="max-width: 420px;">
-        <div class="card shadow-sm border-0">
-            <div class="card-body p-4">
-                <h2 class="card-title mb-4 text-center">로그인</h2>
+    <div class="container login-wrapper">
+        
+        <!-- 1. 상단 브랜딩 로고 -->
+        <div class="text-center mb-4 pb-2">
+            <a href="/" class="text-decoration-none d-inline-flex align-items-center fs-3 text-dark fw-bold">
+                <span class="me-2 opacity-75">👛</span>가계부
+            </a>
+        </div>
+
+        <!-- 2. 로그인 카드 영역 -->
+        <div class="card shadow-sm border-0 rounded-3">
+            <!-- p-4 p-sm-5로 내부 여백을 넉넉하게 확보 -->
+            <div class="card-body p-4 p-sm-5">
+                <h3 class="card-title fs-4 fw-bold mb-4 text-dark text-center">로그인</h3>
+                
                 <form method="post" action="/login/request">
-                    <div class="mb-3">
-                        <label for="username" class="form-label">아이디</label>
-                        <input type="text" class="form-control" id="username" name="username" placeholder="아이디 입력" required>
+                    <div class="mb-3.5 mb-sm-4">
+                        <label for="username" class="form-label small fw-semibold text-secondary mb-2">아이디</label>
+                        <input type="text" class="form-control form-control-lg fs-6 py-2.5" id="username" name="username" placeholder="아이디 입력" required autocomplete="username">
                     </div>
-                    <div class="mb-3">
-                        <label for="password" class="form-label">비밀번호</label>
-                        <input type="password" class="form-control" id="password" name="password" placeholder="비밀번호 입력" required>
+                    
+                    <div class="mb-4 pb-1">
+                        <label for="password" class="form-label small fw-semibold text-secondary mb-2">비밀번호</label>
+                        <input type="password" class="form-control form-control-lg fs-6 py-2.5" id="password" name="password" placeholder="비밀번호 입력" required autocomplete="current-password">
                     </div>
-                    <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-primary btn-lg">로그인</button>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-dark-custom btn-lg fs-6 fw-semibold py-2.5 rounded-2">로그인</button>
                     </div>
                 </form>
-                <p class="text-center text-muted small mt-3 mb-0">아직 회원이 아니신가요? <a href="/register">가입하기</a></p>
+
+                <div class="text-center mt-4 pt-3 border-top">
+                    <p class="text-muted small mb-0">
+                        아직 회원이 아니신가요? 
+                        <a href="/register" class="text-dark fw-bold text-decoration-none ms-1 link-hover">회원가입</a>
+                    </p>
+                </div>
             </div>
         </div>
+
     </div>
+
+    <style>
+        /* 💡 너비를 460px로 넓혀 PC 전체화면에서 휑해 보이는 느낌 완화 */
+        .login-wrapper {
+            max-width: 460px;
+            padding-top: 100px;
+            padding-bottom: 60px;
+        }
+
+        /* 모바일 등 작은 화면에선 적절히 위쪽 패딩 축소 */
+        @media (max-width: 576px) {
+            .login-wrapper {
+                max-width: 100%;
+                padding-top: 50px;
+            }
+        }
+
+        /* 커스텀 버튼 및 인풋 포커스 스타일 */
+        .btn-dark-custom {
+            background-color: #212529;
+            color: #ffffff;
+            border: none;
+            transition: background-color 0.15s ease;
+        }
+        .btn-dark-custom:hover {
+            background-color: #343a40;
+            color: #ffffff;
+        }
+        .form-control:focus {
+            border-color: #212529;
+            box-shadow: 0 0 0 0.25rem rgba(33, 37, 41, 0.1);
+        }
+        .link-hover:hover {
+            text-decoration: underline !important;
+        }
+    </style>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
