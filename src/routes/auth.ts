@@ -100,5 +100,13 @@ router.post('/register/request', async (req: Request, res: Response) => {
   }
 })
 
+router.post('/logout', (req: Request, res: Response) => {
+  // 1. 쿠키에 저장된 토큰 지우기
+  res.clearCookie('token'); 
+  
+  // 2. 응답 보내기 (페이지 이동 또는 JSON 응답)
+  return res.redirect('/login');
+});
+
 
 export default router;
