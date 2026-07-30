@@ -8,13 +8,45 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="/main.css" rel="stylesheet"> 
   <script src="https://kit.fontawesome.com/3cda4bc1c7.js" crossorigin="anonymous"></script>
+  <style>
+    .action-buttons {
+      min-width: 96px;
+    }
+    .action-buttons .action-icon {
+      opacity: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      color: #6c757d;
+      background: transparent;
+      border: 1px solid transparent;
+      transition: opacity 0.15s ease-in-out, background-color 0.15s ease-in-out, color 0.15s ease-in-out, border-color 0.15s ease-in-out;
+      text-decoration: none;
+    }
+    tr:hover .action-buttons .action-icon {
+      opacity: 1;
+    }
+    .action-buttons .action-icon:hover {
+      color: #0d6efd;
+      background: rgba(13, 110, 253, 0.1);
+      border-color: rgba(13, 110, 253, 0.2);
+    }
+    .action-buttons .action-icon.delete-icon:hover {
+      color: #dc3545;
+      background: rgba(220, 53, 69, 0.1);
+      border-color: rgba(220, 53, 69, 0.2);
+    }
+  </style>
 </head>
 <body class="bg-light">
   <%- include('nav.ejs') %>
   <div class="container my-5" style="max-width: 900px;">
     <!-- 헤더 구역 -->
     <div class="d-flex justify-content-between align-items-center mb-4">
-      <h1 class="h3 mb-0 text-dark fw-bold">💰 가계부 고정지출 내역</h1>
+      <h1 class="h3 mb-0 text-dark fw-bold">💰 가계부 지출 내역</h1>
       <a href="/expense/write" class="btn btn-primary fw-semibold shadow-sm"><i class="fa-solid fa-circle-plus"></i> 새 지출 내역</a>
     </div>
 
@@ -39,13 +71,14 @@
               <th scope="col">내역</th>
               <th scope="col">금액</th>
               <th scope="col" class="pe-4">상세 설명</th>
+              <th scope="col" class="text-end"></th>
             </tr>
           </thead>
           <tbody>
             <% if (items.length === 0) { %>
               <tr>
                 <td colspan="5" class="text-center py-5 text-secondary">
-                  기록된 고정지출 내역이 없습니다. 새로운 고정비용을 등록해 보세요!
+                  기록된 지출 내역이 없습니다. 새로운 지출을 등록해 보세요!
                 </td>
               </tr>
             <% } else { %>
@@ -60,7 +93,15 @@
                   </td>
                   <td><span class="fw-semibold text-dark"><%= item.event %></span></td>
                   <td class="text-danger fw-semibold"><%= item.price.toLocaleString() %>원</td>
-                  <td class="text-muted pe-4 small text-truncate" style="max-width: 200px;"><%= item.explanation %></td>
+                  <td class="text-dark pe-4 small text-truncate" style="max-width: 200px;"><%= item.explanation %></td>
+                  <td class="text-end pe-4 action-buttons">
+                    <a href="/expense/edit/<%= item._id %>" class="action-icon edit-icon" title="수정">
+                      <i class="fa-solid fa-pen-to-square"></i>
+                    </a>
+                    <a href="/expense/delete/<%= item._id %>" class="action-icon delete-icon" title="삭제">
+                      <i class="fa-solid fa-trash"></i>
+                    </a>
+                  </td>
                 </tr>
               <% }); %>
             <% } %>
