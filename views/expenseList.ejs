@@ -94,7 +94,7 @@
                   <% items.forEach(function(item) { %>
                     <tr>
                       <td class="ps-4 text-secondary small">
-                        <%= item.date %>
+                        <%= item.year %>-<%= String(item.month).padStart(2, '0') %>-<%= String(item.day).padStart(2, '0') %>
                       </td>
                       <td>
                         <!-- 카테고리별로 이쁘게 배지(Badge) 처리 -->
@@ -160,7 +160,7 @@
     } catch (error) {
         console.error('삭제 요청 중 에러 발생:', error);
         alert('서버와 통신하는 중 오류가 발생했습니다.');
-    }
+    } 
 }
 </script>
     <!-- 💡 부트스트랩 자바스크립트 CDN -->

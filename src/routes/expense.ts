@@ -14,7 +14,9 @@ interface expenseInfo extends UserPayLoad {
   explanation: string,
   isFixed: boolean,
   moneyType: 'expense',
-  date: string,
+  year : number,
+  month : number,
+  day : number
 }
 
 interface UserPayLoad {
@@ -43,7 +45,15 @@ router.post('/post', validateExpense, async (req: Request, res: Response) => {
 
 
     //document에 담아야할 내용들을 req.body에서 받기
-    const { event, category, price, explanation, isFixed, date } = req.body;
+    const { event, category, price, explanation, isFixed} = req.body;
+    const date : Date = new Date(req.body.date);
+
+    const {year} : {year : number} = {year : date.getFullYear()};
+    const {month} : {month : number} ={month : date.getMonth()+1};
+    const {day} : {day : number} = {day : date.getDate()};
+    
+    // date를 연 월 일로 쪼개기 
+
 
     const { userId, username } = req.user as UserPayLoad;
     console.log(req.user);
@@ -60,7 +70,9 @@ router.post('/post', validateExpense, async (req: Request, res: Response) => {
       explanation,
       isFixed: fix,
       moneyType: 'expense',
-      date,
+      year,
+      month,
+      day,
       userId,
       username
     };

@@ -46,7 +46,7 @@
   <div class="container my-5" style="max-width: 900px;">
     <!-- 헤더 구역 -->
     <div class="d-flex justify-content-between align-items-center mb-4">
-      <h1 class="h3 mb-0 text-dark fw-bold">💰 가계부 지출 내역</h1>
+      <h1 class="h3 mb-0 text-dark fw-bold">💰 가계부 고정   지출 내역</h1>
       <a href="/expense/write" class="btn btn-primary fw-semibold shadow-sm"><i class="fa-solid fa-circle-plus"></i> 새 지출 내역</a>
     </div>
 
@@ -84,7 +84,9 @@
             <% } else { %>
               <% items.forEach(function(item) { %>
                 <tr>
-                  <td class="ps-4 text-secondary small"><%= item.date %></td>
+                  <td class="ps-4 text-secondary small">
+                    <%= item.year %>-<%= String(item.month).padStart(2, '0') %>-<%= String(item.day).padStart(2, '0') %>
+                  </td>
                   <td>
                     <!-- 카테고리별로 이쁘게 배지(Badge) 처리 -->
                     <span class="badge bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle rounded-pill px-3">
