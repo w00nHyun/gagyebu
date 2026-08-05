@@ -78,8 +78,11 @@ app.use('', authRouter);  //auth 관련된 것들
 
 app.use('/expense', expenseRouter); //가계부 작성, 내역보기, 고정지출
 
-
-
+//데이터 형식 모음 
+interface UserPayLoad {
+  username: string,
+  userId: string
+}
 
 interface GroupStat<T> {
   _id: T;
@@ -113,10 +116,6 @@ function mapStatsToLabels(statsArray: { _id: string; total: number }[], labels: 
   });
 
   return labels.map(label => statsMap[label] || 0);
-}
-interface UserPayLoad{
-  username :string,
-  userId:string
 }
 
 //예산 설정 api 
@@ -210,7 +209,144 @@ app.post('/plan/budget/save', async (req: Request, res: Response) => {
   }
 })
 
-app.get('/report', requireAuth, (req: Request, res: Response) => {
-  res.render('report.ejs');
+app.get('/calendar', requireAuth, (req: Request, res: Response) => {
+  try {
+    //달력 기능 
+
+    //1. 서버사이드 렌더링이랑 클라이언트 사이드 렌더링중에 어떤걸 할건가? 
+    //1.1. 새로고침 없이 데이터들을 많이 바꿔야 하므로 클라이언트 사이드 렌더링이 맞는듯 
+    //2. 달력에 줄 데이터들은 기본 설정 월에 맞춰서 갖다주기 
+    //3. 내역을 누르면 그게 뭐에 쓴 내용인지 카드 형태로 보여주기 
+
+    //4. 그럼 서버 코드는 어떻게 짜야하나? 
+
+    //1. 현재 월에 맞는 데이터들을 toarray로 찾아서 일별 오름차순으로 정리해서 클라이언트에 전송
+    //1.1. 1번 문제를 하기 위해 먼저 해야하는 일 소비일을 저장할 때 연도 월 일을 따로 저장해야함.(해결 완료)
+    //2. 일을 클릭하면 그 일에 맞는 데이터를 전송 
+    res.render('calendar.ejs');
+  } catch (error) {
+    console.log(error);
+  }
 })
 
+app.get('/calendar/data', requireAuth, async (req: Request, res: Response) => {
+  try {
+    let user = req.user as UserPayLoad;
+    const from = req.query.from as string;
+    const to = req.query.to as string;
+    //쿼리 파라미터 값이 없는 경우
+    if (!from || !to) {
+      return res.status(400).json({ message: 'from 및 to 쿼리 파라미터를 모두 전달해주세요.' });
+    }
+    const fromDate = new Date(from);
+    const toDate = new Date(to);
+    //날짜 형식이 이상한지 확인
+    if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
+      return res.status(400).json({
+        message: '올바른 날짜 형식이 아닙니다. (예: YYYY-MM-DD)'
+      });
+    }
+    const fromParts = from.split('-').map(Number);
+    const toParts = to.split('-').map(Number);
+
+    //연도,월,일을 숫자로 저장
+    const [fromYear, fromMonth, fromDay] = fromParts;
+    const [toYear, toMonth, toDay] = toParts;
+
+    //기간 from에서 to 오류 막기 위해
+    if (fromYear > toYear) {
+      return res.status(400).json({ message: '쿼리파라미터 기간 유효성 오류' });
+    }
+    if (fromYear == toYear) {
+      if (fromMonth > toMonth) {
+        return res.status(400).json({ message: '쿼리파라미터 기간 유효성 오류' });
+      }
+      else if (fromMonth == toMonth && fromDay > toDay) {
+        return res.status(400).json({ message: '쿼리파라미터 기간 유효성 오류' });
+      }
+    }
+
+    // 날짜 범위 내의 거래 항목 조회
+    const buildDateInt = (y: number, m: number, d: number) => y * 10000 + m * 100 + d;
+    const fromInt = buildDateInt(fromYear, fromMonth, fromDay);
+    const toInt = buildDateInt(toYear, toMonth, toDay);
+
+    const rawItems = await db.collection('transection').aggregate([
+      {
+        $match: {
+          userId: req.user && (req.user as UserPayLoad).userId,
+          $expr: {
+            $and: [
+              { $gte: [
+                { $add: [ { $multiply: ["$year", 10000] }, { $multiply: ["$month", 100] }, "$day" ] },
+                fromInt
+              ] },
+              { $lte: [
+                { $add: [ { $multiply: ["$year", 10000] }, { $multiply: ["$month", 100] }, "$day" ] },
+                toInt
+              ] }
+            ]
+          }
+        }
+      },
+      {
+        $project: {
+          _id: 1,
+          event: 1,
+          category: 1,
+          price: 1,
+          explanation: 1,
+          isFixed: 1,
+          moneyType: 1,
+          year: 1,
+          month: 1,
+          day: 1
+        }
+      }
+    ]).toArray();
+
+    // from -> to 기간의 모든 날짜를 초기화
+    const days: Array<{ date: string; year: number; month: number; day: number; items: any[]; incomeTotal: number; expenseTotal: number }> = [];
+    const dayMap: Record<string, { date: string; year: number; month: number; day: number; items: any[]; incomeTotal: number; expenseTotal: number }> = {};
+
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const formatDate = (y: number, m: number, d: number) => `${y}-${pad(m)}-${pad(d)}`;
+
+    for (let d = new Date(fromYear, fromMonth - 1, fromDay); d <= new Date(toYear, toMonth - 1, toDay); d.setDate(d.getDate() + 1)) {
+      const y = d.getFullYear();
+      const m = d.getMonth() + 1;
+      const day = d.getDate();
+      const dateString = formatDate(y, m, day);
+      const entry = { date: dateString, year: y, month: m, day, items: [], incomeTotal: 0, expenseTotal: 0 };
+      days.push(entry);
+      dayMap[dateString] = entry;
+    }
+
+    // rawItems를 매핑
+    rawItems.forEach((it: any) => {
+      const dateString = formatDate(it.year, it.month, it.day);
+      const entry = dayMap[dateString];
+      if (!entry) return; // 범위를 벗어나면 무시
+
+      const amount = Number(it.price) || 0;
+      entry.items.push(it);
+      if ((it.moneyType || 'expense') === 'income') entry.incomeTotal += amount;
+      else entry.expenseTotal += amount;
+    });
+
+    // 요약(선택)
+    const summary = days.reduce(
+      (acc, cur) => {
+        acc.totalIncome += cur.incomeTotal;
+        acc.totalExpense += cur.expenseTotal;
+        return acc;
+      },
+      { totalIncome: 0, totalExpense: 0 }
+    );
+
+    return res.json({ startDate: from, endDate: to, days, summary });
+  } catch (err) {
+    console.log(err);
+    res.json(500);
+  }
+})

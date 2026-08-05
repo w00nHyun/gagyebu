@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>가계부 - 달력 보기</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="/main.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-blue: #1e40af;
+            --light-blue: #3b82f6;
+            --lighter-blue: #dbeafe;
+            --very-light-blue: #f0f9ff;
+            --income-color: #10b981;
+            --expense-color: #ef4444;
+        }
+
+        .calendar-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .page-header {
+            margin-bottom: 25px;
+        }
+
+        .page-header h2 {
+            color: var(--primary-blue);
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        /* 월 이동 컨트롤 */
+        .month-picker {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 25px;
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .month-picker h3 {
+            margin: 0;
+            color: var(--primary-blue);
+            font-weight: bold;
+            font-size: 22px;
+        }
+
+        .month-picker .btn-icon {
+            background: none;
+            border: none;
+            color: var(--primary-blue);
+            font-size: 20px;
+            cursor: pointer;
+            padding: 4px 10px;
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+
+        .month-picker .btn-icon:hover {
+            background-color: var(--lighter-blue);
+        }
+
+        /* 달력 카드 및 그리드 */
+        .calendar-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            border-top: 4px solid var(--primary-blue);
+            margin-bottom: 25px;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 6px;
+        }
+
+        /* 요일 헤더 */
+        .weekday-header {
+            text-align: center;
+            font-weight: 600;
+            padding: 10px 0;
+            color: #6c757d;
+            font-size: 14px;
+        }
+
+        .weekday-header.sun { color: var(--expense-color); }
+        .weekday-header.sat { color: var(--light-blue); }
+
+        /* 날짜 셀 */
+        .calendar-day {
+            min-height: 100px;
+            background-color: var(--very-light-blue);
+            border-radius: 8px;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 2px solid transparent;
+        }
+
+        .calendar-day:hover {
+            border-color: var(--light-blue);
+            background-color: white;
+            box-shadow: 0 4px 10px rgba(59, 130, 246, 0.15);
+        }
+
+        .calendar-day.other-month {
+            opacity: 0.35;
+            background-color: #f8f9fa;
+        }
+
+        .calendar-day.today {
+            background-color: white;
+            border-color: #93c5fd;
+        }
+
+        .calendar-day.selected {
+            border-color: var(--primary-blue) !important;
+            background-color: white;
+            box-shadow: 0 0 10px rgba(30, 64, 175, 0.25);
+        }
+
+        .day-number {
+            font-weight: bold;
+            font-size: 14px;
+            color: #333;
+        }
+
+        .calendar-day:nth-child(7n+1) .day-number { color: var(--expense-color); }
+        .calendar-day:nth-child(7n) .day-number { color: var(--light-blue); }
+
+        /* 셀 내부 금액 */
+        .day-prices {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 2px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .price-income { color: var(--income-color); }
+        .price-expense { color: var(--expense-color); }
+
+        /* 달력 하단 상세 내역 카드 */
+        .detail-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .detail-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f1f5f9;
+            margin-bottom: 15px;
+        }
+
+        @media (max-width: 768px) {
+            .calendar-day { min-height: 75px; padding: 4px; }
+            .day-number { font-size: 12px; }
+            .day-prices { font-size: 10px; }
+            .detail-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <%- include('nav.ejs') %>
+
+    <div class="calendar-container">
+        <div class="page-header d-flex justify-content-between align-items-center">
+            <div>
+                <h2>📅 가계부 달력</h2>
+                <p class="text-muted">일별 수입 및 지출 현황을 한눈에 확인하세요</p>
+            </div>
+            <!-- 🔗 상단 버튼 클릭 시 /expense/write 이동 -->
+            <button class="btn btn-primary" onclick="goToWritePage()">
+                <i class="bi bi-plus-lg"></i> 내역 추가
+            </button>
+        </div>
+
+        <!-- 월 이동 헤더 -->
+        <div class="month-picker">
+            <button class="btn-icon" id="prevMonth"><i class="bi bi-chevron-left"></i></button>
+            <h3 id="currentMonthText"></h3>
+            <button class="btn-icon" id="nextMonth"><i class="bi bi-chevron-right"></i></button>
+        </div>
+
+        <!-- 달력 카드 -->
+        <div class="calendar-card">
+            <div class="calendar-grid" id="calendarGrid">
+                <div class="weekday-header sun">일</div>
+                <div class="weekday-header">월</div>
+                <div class="weekday-header">화</div>
+                <div class="weekday-header">수</div>
+                <div class="weekday-header">목</div>
+                <div class="weekday-header">금</div>
+                <div class="weekday-header sat">토</div>
+            </div>
+        </div>
+
+        <!-- 달력 하단 상세 내역 영역 -->
+        <div class="detail-card">
+            <div class="detail-header">
+                <div>
+                    <h4 class="fw-bold m-0" id="selectedDateTitle" style="color: var(--primary-blue);">날짜를 선택하세요</h4>
+                </div>
+                <div class="d-flex gap-3 fw-bold align-items-center">
+                    <span class="text-success" id="detailIncomeTotal">수입: +0원</span>
+                    <span class="text-danger" id="detailExpenseTotal">지출: -0원</span>
+                    <!-- 🔗 하단 버튼 클릭 시 선택된 날짜 파라미터와 함께 /expense/write 이동 -->
+                    <button class="btn btn-sm btn-outline-primary ms-2" onclick="goToWritePageWithDate()">
+                        <i class="bi bi-plus-lg"></i> 이 날짜에 추가
+                    </button>
+                </div>
+            </div>
+
+            <ul class="list-group list-group-flush" id="detailList">
+                <li class="list-group-item text-center text-muted py-4">달력에서 날짜를 클릭하면 상세 내역이 표시됩니다.</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const today = new Date();
+        let currentYear = today.getFullYear();
+        let currentMonth = today.getMonth() + 1;
+        let selectedYear = currentYear;
+        let selectedMonth = currentMonth;
+        let selectedDay = today.getDate();
+
+        const currentMonthText = document.getElementById('currentMonthText');
+        const calendarGrid = document.getElementById('calendarGrid');
+        const prevBtn = document.getElementById('prevMonth');
+        const nextBtn = document.getElementById('nextMonth');
+        const detailList = document.getElementById('detailList');
+
+        const calendarDayMap = new Map();
+
+        const pad2 = (value) => String(value).padStart(2, '0');
+        const formatDateKey = (year, month, day) => `${year}-${pad2(month)}-${pad2(day)}`;
+        const getDaysInMonth = (year, month) => new Date(year, month, 0).getDate();
+
+        async function fetchCalendarData(year, month) {
+            const from = `${year}-${pad2(month)}-01`;
+            const to = `${year}-${pad2(month)}-${pad2(getDaysInMonth(year, month))}`;
+
+            try {
+                const response = await fetch(`/calendar/data?from=${from}&to=${to}`);
+                if (!response.ok) {
+                    const error = await response.json().catch(() => ({ message: '서버 오류' }));
+                    console.error('달력 데이터 로드 실패:', error.message || error);
+                    return;
+                }
+
+                const result = await response.json();
+                calendarDayMap.clear();
+                result.days.forEach(day => {
+                    calendarDayMap.set(day.date, day);
+                });
+            } catch (error) {
+                console.error('달력 데이터 요청 중 오류가 발생했습니다.', error);
+            }
+        }
+
+        const getDayData = (year, month, day) => {
+            return calendarDayMap.get(formatDateKey(year, month, day)) || { items: [], incomeTotal: 0, expenseTotal: 0 };
+        };
+
+        async function renderCalendar(year, month) {
+            currentMonthText.textContent = `${year}년 ${month}월`;
+            const activeDays = calendarGrid.querySelectorAll('.calendar-day');
+            activeDays.forEach(day => day.remove());
+
+            await fetchCalendarData(year, month);
+
+            const firstDayOfWeek = new Date(year, month - 1, 1).getDay();
+            const lastDate = getDaysInMonth(year, month);
+            const prevLastDate = new Date(year, month - 1, 0).getDate();
+
+            if (selectedYear !== year || selectedMonth !== month) {
+                selectedYear = year;
+                selectedMonth = month;
+                selectedDay = Math.min(selectedDay, lastDate);
+            }
+
+            for (let i = firstDayOfWeek - 1; i >= 0; i--) {
+                const dayDiv = document.createElement('div');
+                dayDiv.className = 'calendar-day other-month';
+                dayDiv.innerHTML = `<span class="day-number">${prevLastDate - i}</span>`;
+                calendarGrid.appendChild(dayDiv);
+            }
+
+            for (let day = 1; day <= lastDate; day++) {
+                const dayDiv = document.createElement('div');
+                dayDiv.className = 'calendar-day';
+
+                if (year === today.getFullYear() && month === (today.getMonth() + 1) && day === today.getDate()) {
+                    dayDiv.classList.add('today');
+                }
+
+                if (year === selectedYear && month === selectedMonth && day === selectedDay) {
+                    dayDiv.classList.add('selected');
+                }
+
+                const dayData = getDayData(year, month, day);
+                let pricesHTML = '';
+                if (dayData.incomeTotal > 0 || dayData.expenseTotal > 0) {
+                    pricesHTML += `<div class="day-prices">`;
+                    if (dayData.incomeTotal > 0) pricesHTML += `<span class="price-income">+ ${dayData.incomeTotal.toLocaleString()}원</span>`;
+                    if (dayData.expenseTotal > 0) pricesHTML += `<span class="price-expense">- ${dayData.expenseTotal.toLocaleString()}원</span>`;
+                    pricesHTML += `</div>`;
+                }
+
+                dayDiv.innerHTML = `<span class="day-number">${day}</span>${pricesHTML}`;
+                dayDiv.addEventListener('click', () => {
+                    document.querySelectorAll('.calendar-day.selected').forEach(el => el.classList.remove('selected'));
+                    dayDiv.classList.add('selected');
+
+                    selectedYear = year;
+                    selectedMonth = month;
+                    selectedDay = day;
+                    renderDetailSection(year, month, day);
+                });
+                calendarGrid.appendChild(dayDiv);
+            }
+
+            const totalCells = firstDayOfWeek + lastDate;
+            const nextDays = (7 - (totalCells % 7)) % 7;
+            for (let i = 1; i <= nextDays; i++) {
+                const dayDiv = document.createElement('div');
+                dayDiv.className = 'calendar-day other-month';
+                dayDiv.innerHTML = `<span class="day-number">${i}</span>`;
+                calendarGrid.appendChild(dayDiv);
+            }
+        }
+
+        function renderDetailSection(year, month, day) {
+            document.getElementById('selectedDateTitle').textContent = `📅 ${year}년 ${month}월 ${day}일 소비 내역`;
+
+            const dayData = getDayData(year, month, day);
+            detailList.innerHTML = '';
+
+            let incomeTotal = 0;
+            let expenseTotal = 0;
+
+            if (!dayData.items.length) {
+                detailList.innerHTML = `<li class="list-group-item text-center text-muted py-4">등록된 소비 내역이 없습니다.</li>`;
+            } else {
+                dayData.items.forEach(item => {
+                    const type = item.moneyType || 'expense';
+                    const isIncome = type === 'income';
+                    const amount = Number(item.price) || 0;
+                    if (isIncome) incomeTotal += amount;
+                    else expenseTotal += amount;
+
+                    const badgeColor = isIncome ? 'bg-success' : 'bg-danger';
+                    const priceSign = isIncome ? '+' : '-';
+                    const textColor = isIncome ? 'text-success' : 'text-danger';
+                    const description = item.explanation || '내역 없음';
+
+                    detailList.innerHTML += `
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-2 py-3">
+                            <div>
+                                <span class="badge ${badgeColor} me-2">${item.category || '기타'}</span>
+                                <span class="fw-bold text-dark">${description}</span>
+                            </div>
+                            <span class="fw-bold ${textColor}">${priceSign} ${amount.toLocaleString()}원</span>
+                        </li>
+                    `;
+                });
+            }
+
+            document.getElementById('detailIncomeTotal').textContent = `수입: +${incomeTotal.toLocaleString()}원`;
+            document.getElementById('detailExpenseTotal').textContent = `지출: -${expenseTotal.toLocaleString()}원`;
+        }
+
+        function goToWritePage() {
+            window.location.href = '/expense/write';
+        }
+
+        function goToWritePageWithDate() {
+            const mStr = pad2(selectedMonth);
+            const dStr = pad2(selectedDay);
+            const dateStr = `${selectedYear}-${mStr}-${dStr}`;
+            window.location.href = `/expense/write?date=${dateStr}`;
+        }
+
+        prevBtn.addEventListener('click', async () => {
+            currentMonth--;
+            if (currentMonth < 1) { currentMonth = 12; currentYear--; }
+            await renderCalendar(currentYear, currentMonth);
+            renderDetailSection(selectedYear, selectedMonth, selectedDay);
+        });
+
+        nextBtn.addEventListener('click', async () => {
+            currentMonth++;
+            if (currentMonth > 12) { currentMonth = 1; currentYear++; }
+            await renderCalendar(currentYear, currentMonth);
+            renderDetailSection(selectedYear, selectedMonth, selectedDay);
+        });
+
+        (async () => {
+            await renderCalendar(currentYear, currentMonth);
+            renderDetailSection(selectedYear, selectedMonth, selectedDay);
+        })();
+    </script>
+</body>
+</html>
