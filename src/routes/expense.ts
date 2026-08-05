@@ -14,9 +14,9 @@ interface expenseInfo extends UserPayLoad {
   explanation: string,
   isFixed: boolean,
   moneyType: 'expense',
-  year : number,
-  month : number,
-  day : number
+  year: number,
+  month: number,
+  day: number
 }
 
 interface UserPayLoad {
@@ -45,13 +45,13 @@ router.post('/post', validateExpense, async (req: Request, res: Response) => {
 
 
     //document에 담아야할 내용들을 req.body에서 받기
-    const { event, category, price, explanation, isFixed} = req.body;
-    const date : Date = new Date(req.body.date);
+    const { event, category, price, explanation, isFixed } = req.body;
+    const date: Date = new Date(req.body.date);
 
-    const {year} : {year : number} = {year : date.getFullYear()};
-    const {month} : {month : number} ={month : date.getMonth()+1};
-    const {day} : {day : number} = {day : date.getDate()};
-    
+    const { year }: { year: number } = { year: date.getFullYear() };
+    const { month }: { month: number } = { month: date.getMonth() + 1 };
+    const { day }: { day: number } = { day: date.getDate() };
+
     // date를 연 월 일로 쪼개기 
 
 
@@ -140,8 +140,15 @@ router.get('/edit/:id', async (req: Request, res: Response) => {
 router.put('/edit/:id', async (req: Request, res: Response) => {
   //put 요청을 받아서
   //수정된 값을 수정하기
+
   let id: string = req.params.id as string;
-  const { event, category, price, explanation, isFixed, date } = req.body;
+
+  const { event, category, price, explanation, isFixed } = req.body;
+  const date: Date = new Date(req.body.date);
+
+  const { year }: { year: number } = { year: date.getFullYear() };
+  const { month }: { month: number } = { month: date.getMonth() + 1 };
+  const { day }: { day: number } = { day: date.getDate() };
   await db.collection<expenseInfo>('transection').updateOne({
     _id: new ObjectId(id)
   }, {
@@ -151,7 +158,9 @@ router.put('/edit/:id', async (req: Request, res: Response) => {
       event: event,
       explanation: explanation,
       isFixed: isFixed,
-      date: date
+      year,
+      month,
+      day
     }
   })
   res.status(200).json({

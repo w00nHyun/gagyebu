@@ -7,6 +7,13 @@
     <title>지출입력</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="/main.css" rel="stylesheet">
+<!-- Flatpickr CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link href="/main.css" rel="stylesheet">
+
+    <!-- Flatpickr JS -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ko.js"></script>
 </head>
 
 <body>
@@ -78,13 +85,13 @@
                     <span class="input-group-text">원</span>
                 </div>
 
-                <!-- 5. 날짜 (date - 고정비 여부와 관계없이 인터페이스의 date 하나로 매핑) -->
-                <div class="input-group mb-3">
-                    <span class="input-group-text" id="dateLabel">
-                        <%= (typeof result !=='undefined' && result.isFixed) ? '시작 날짜' : '날짜' %>
-                    </span>
-                    <input type="date" class="form-control" id="date" name="date"
-                        value="<%= (typeof result !== 'undefined' && result.date) ? result.date : '' %>" required>
+               <!-- 5. 날짜 (Flatpickr + 퀵 버튼 + 토글 라벨) -->
+            <div class="input-group mb-3">
+                <span class="input-group-text" id="dateLabel">
+                    <%= (typeof result !== 'undefined' && result.isFixed) ? '시작 날짜' : '날짜' %>
+                </span>
+                <input type="text" id="datePicker" name="date" class="form-control bg-white" placeholder="날짜 선택" 
+                   value="<%= (typeof result !== 'undefined' && result.year && result.month && result.day) ? result.year + '-' + (result.month < 10 ? '0' + result.month : result.month) + '-' + (result.day < 10 ? '0' + result.day : result.day) : '' %>" required>
                 </div>
 
                 <!-- 6. 설명 (explanation) -->
@@ -105,57 +112,76 @@
 
 
 
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-        <script>
-            const isFixedCheckbox = document.getElementById('isFixedExpense');
-            const dateLabel = document.getElementById('dateLabel');
+     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // 1. Flatpickr 날짜 선택기 초기화 (한국어 설정 포함)
+    const fp = flatpickr("#datePicker", {
+        locale: "ko",
+        dateFormat: "Y-m-d",
+        defaultDate: "<%= (typeof result !== 'undefined' && result.date) ? result.date : '' %>" || "today"
+    });
 
-            // 라벨 토글
-            if (isFixedCheckbox) {
-                isFixedCheckbox.addEventListener('change', function () {
-                    dateLabel.textContent = this.checked ? '시작 날짜' : '날짜';
-                });
+    const isFixedCheckbox = document.getElementById('isFixedExpense');
+    const dateLabel = document.getElementById('dateLabel');
+
+    // 라벨 토글
+    if (isFixedCheckbox) {
+        isFixedCheckbox.addEventListener('change', function () {
+            dateLabel.textContent = this.checked ? '시작 날짜' : '날짜';
+        });
+    }
+
+    // 폼 제출 비동기 처리 (PUT JSON)
+    document.getElementById('expenseForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const isFixed = !!(isFixedCheckbox && isFixedCheckbox.checked);
+
+        // 💡 id를 'date'에서 'datePicker'로 수정했습니다.
+        const payload = {
+            event: document.getElementById('group').value,
+            category: document.getElementById('category').value,
+            price: Number(document.getElementById('amount').value) || 0,
+            date: document.getElementById('datePicker').value, 
+            isFixed: isFixed,
+            explanation: document.getElementById('description').value
+        };
+
+        // 날짜 유효성 검사
+        if (!payload.date) {
+            alert('날짜를 선택해주세요.');
+            return;
+        }
+
+        try {
+            // 💡 result._id 가 없을 경우를 대비한 안전한 URL 처리
+            const editId = "<%= (typeof result !== 'undefined' && result._id) ? result._id : '' %>";
+            const targetUrl = editId ? `/expense/edit/${editId}` : '/expense/save';
+            const targetMethod = editId ? 'PUT' : 'POST';
+
+            const response = await fetch(targetUrl, {
+                method: targetMethod,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const resJson = await response.json();
+
+            if (!response.ok || !resJson.success) {
+                const errors = resJson && resJson.errors ? Object.values(resJson.errors) : [];
+                if (errors.length > 0) alert(errors[0]);
+                else alert(resJson.message || '저장/수정에 실패했습니다.');
+                return;
             }
 
-            // 폼 제출 비동기 처리 (PUT JSON)
-            document.getElementById('expenseForm').addEventListener('submit', async (e) => {
-                e.preventDefault();
-
-                const isFixed = !!(isFixedCheckbox && isFixedCheckbox.checked);
-
-                const payload = {
-                    event: document.getElementById('group').value,
-                    category: document.getElementById('category').value,
-                    price: Number(document.getElementById('amount').value) || 0,
-                    date: document.getElementById('date').value,
-                    isFixed: isFixed,
-                    explanation: document.getElementById('description').value
-                };
-
-                try {
-                    const response = await fetch('/expense/edit/<%=result._id %>', {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-
-                    const resJson = await response.json();
-
-                    if (!response.ok || !resJson.success) {
-                        const errors = resJson && resJson.errors ? Object.values(resJson.errors) : [];
-                        if (errors.length > 0) alert(errors[0]);
-                        else alert(resJson.message || '수정에 실패했습니다.');
-                        return;
-                    }
-
-                    alert('지출 내역이 성공적으로 수정되었습니다.');
-                    window.location.href = '/expense/list';
-                } catch (err) {
-                    console.error('서버 통신 에러:', err);
-                    alert('서버와 연결할 수 없습니다.');
-                }
-            });
-        </script>
+            alert('성공적으로 저장되었습니다.');
+            window.location.href = '/expense/list';
+        } catch (err) {
+            console.error('서버 통신 에러:', err);
+            alert('서버와 연결할 수 없습니다.');
+        }
+    });
+</script>
 </body>
 
 </html>
