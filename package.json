@@ -17,9 +17,11 @@
     "ejs": "^6.0.1",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
+    "method-override": "^3.0.0",
     "mongodb": "^7.4.0",
     "nodemon": "^3.1.14",
     "passport": "^0.7.0",
+    "passport-google-oauth20": "^2.0.0",
     "passport-jwt": "^4.0.1"
   },
   "devDependencies": {
@@ -27,8 +29,10 @@
     "@types/cookie-parser": "^1.4.10",
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
+    "@types/method-override": "^3.0.0",
     "@types/node": "^26.1.1",
     "@types/passport": "^1.0.17",
+    "@types/passport-google-oauth20": "^2.0.17",
     "@types/passport-jwt": "^4.0.1",
     "ts-node": "^10.9.2",
     "tsx": "^4.23.0",
