@@ -3,11 +3,13 @@ import dotenv from 'dotenv';
 import passport from 'passport';
 import cookieParser from 'cookie-parser';
 import { connectDB, db, ObjectId } from './config/database';
-import configPassport from './config/passport';
+import {configPassport} from './config/passport';
+import methodOverride from 'method-override';
 import { emitWarning } from 'node:process';
+import jwt from 'jsonwebtoken';
 import authRouter from './routes/auth';
 import expenseRouter from './routes/expense';
-import requireAuth from './middleware/auth.middleware';
+import {requireAuth} from './middleware/auth.middleware';
 dotenv.config();
 
 
@@ -18,7 +20,8 @@ app.use(express.static('public'));
 
 // 폼(Form) 데이터를 req.body로 읽기 위한 설정
 app.use(express.urlencoded({ extended: true }));
-
+// ?_method=PUT 쿼리 스트링을 감지해서 HTTP 메서드를 변경해줌
+app.use(methodOverride('_method'));
 // JSON 데이터를 보낼 때 필요한 설정
 app.use(express.json());
 //쿠기 내용 읽기
@@ -28,25 +31,34 @@ configPassport();
 app.use(passport.initialize());
 
 //req.user에다가 저장하기
+
+
 app.use((req: Request, res: Response, next: NextFunction) => {
-  // 쿠키에 토큰이 없으면 그냥 통과 (비로그인 상태)
   res.locals.user = null;
-  if (!req.cookies?.token) {
+
+  // 1. 쿠키에 토큰이 없으면 비로그인 상태로 다음 미들웨어 이동
+  const token = req.cookies?.token;
+  if (!token) {
     return next();
   }
 
-  // 쿠키에 토큰이 있으면 passport로 검증해서 req.user 세팅!
-  passport.authenticate('jwt', { session: false }, (err: any, user: any) => {
+  // 2. 쿠키에 토큰이 있으면 jwt.verify로 직접 검증해서 req.user 및 res.locals.user 세팅!
+  try {
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET || 'fallback_secret'
+    );
 
-    if (user) {
-      req.user = user; // 여기서 모든 요청마다 req.user를 자동으로 채워줌!
-      res.locals.user = user;
-    }
+    // 로그인된 유저 정보 채워주기
+    req.user = decoded;
+    res.locals.user = decoded; // EJS/뷰 템플릿 등에서 로그인 유저 정보 쓸 때 사용 가능!
+  } catch (err) {
+    // 토큰이 유효하지 않거나 만료된 경우 쿠키만 제거
+    res.clearCookie('token');
+  }
 
-    next();
-  })(req, res, next);
+  next();
 });
-
 
 
 //ejs 설정
@@ -178,36 +190,123 @@ app.get('/stat', requireAuth, async (req: Request, res: Response) => {
 })
 
 
-//삭제 api , 수정 api //expense/write  api 
 
-
-//예산 설정 api
-app.get('/plan/budget', requireAuth, (req: Request, res: Response) => {
-  try {
-    res.render('budgetPlan.ejs');
-  } catch (error) {
-    console.log(error);
-  }
-})
 //예산 설정 인터페이스
-interface budgetPlan {
-  planType: 'weekly' | 'monthly',
-  period: string,
+interface budgetPlan extends UserPayLoad {
+  planType: 'annual' | 'monthly',
   budget: number
 }
-app.post('/plan/budget/save', async (req: Request, res: Response) => {
-  try {
-    const { planType, period, budget } = req.body;
-    let planMemory: budgetPlan = {
-      planType,
-      period,
-      budget
-    }
-    await db.collection('plan').insertOne(planMemory);
-  } catch (error) {
 
+//예산 설정 api
+app.get('/budget', requireAuth, async(req: Request, res: Response) => {
+ try {
+    //예산 설정 (이걸로 마무리) 
+    //1. 월간 예산과 연간 예산은 기간 상관없이 한개씩만 데이터를 받는다. 
+    //2. 데이터가 없다면 생성부터 시킨다. 
+    //3. 데이터가 있다면 수정이나 삭제만 가능하게 한다. (수정이나 삭제나 사실 그렇게 다르지 않음 )
+
+    let user = req.user as UserPayLoad;
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+  
+
+    const monthlyResult = await db.collection('plan').findOne({ userId: user.userId, planType: 'monthly' }, { sort: { updatedAt: -1 } });
+    const annualResult = await db.collection('plan').findOne({ userId: user.userId, planType: 'annual' }, { sort: { updatedAt: -1 } });
+
+    const monthlyUsedAgg = await db.collection('transection').aggregate([
+      { $match: { userId: user.userId, year, month: Number(month) } },
+      { $group: { _id: null, used: { $sum: '$price' } } }
+    ]).toArray();
+    const annualUsedAgg = await db.collection('transection').aggregate([
+      { $match: { userId: user.userId, year } },
+      { $group: { _id: null, used: { $sum: '$price' } } }
+    ]).toArray();
+
+    const budgetData = {
+      monthlyAmount: monthlyResult?.budget ?? null,
+      monthlyUsedAmount: monthlyUsedAgg[0]?.used ?? 0,
+      annualAmount: annualResult?.budget ?? null,
+      annualUsedAmount: annualUsedAgg[0]?.used ?? 0
+    };
+
+    res.render('budget.ejs', { budgetData });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send('서버 에러');
   }
 })
+
+app.get('/budget/plan', requireAuth, async (req: Request, res: Response) => {
+  try {
+    let user = req.user as UserPayLoad;
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+
+    const monthlyResult = await db.collection('plan').findOne({ userId: user.userId, planType: 'monthly' }, { sort: { updatedAt: -1 } });
+    const annualResult = await db.collection('plan').findOne({ userId: user.userId, planType: 'annual' }, { sort: { updatedAt: -1 } });
+
+    const budgetData = {
+      monthlyAmount: monthlyResult?.budget ?? null,
+      monthlyPeriod: `${year}-${month}`,
+      monthlyUsedAmount: 0,
+      annualAmount: annualResult?.budget ?? null,
+      annualPeriod: `${year}`,
+      annualUsedAmount: 0
+    };
+
+    const activeTab = req.query.tab === 'annual' ? 'annual' : 'monthly';
+    res.render('budgetPlan.ejs', { budgetData, activeTab });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send('서버 에러');
+  }
+})
+
+//예산 설정 인터페이스
+
+app.put('/plan/budget/save',requireAuth ,async (req: Request, res: Response) => {
+ try {
+  //예외처리 더 들어가야함 
+    const user = req.user as UserPayLoad;
+    const {planType} = req.body;
+    const budget : number = Number(req.body.budget);
+    const result : budgetPlan= {
+      planType,
+      budget,
+      username : user.username,
+      userId : user.userId
+    }
+    // 기존 예산이 있으면 업데이트하고, 없으면 새로 생성(upsert)
+    await db.collection('plan').updateOne(
+      { userId: user.userId, planType: planType },
+      { $set: { budget: budget, username: user.username, updatedAt: new Date() } },
+      { upsert: true }
+    );      
+    return res.redirect('/budget');
+  } catch (error) {
+    console.log(error);
+    res.status(500).send('서버 에러');
+  }
+});
+
+// 예산 삭제 핸들러
+app.post('/plan/budget/delete', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const user = req.user as UserPayLoad;
+    const { planType } = req.body;
+    if (!['monthly', 'annual'].includes(planType)) {
+      return res.status(400).send('유효하지 않은 예산 종류입니다.');
+    }
+    await db.collection('plan').deleteOne({ userId: user.userId, planType });
+    return res.redirect('/budget');
+  } catch (error) {
+    console.log(error);
+    res.status(500).send('서버 에러');
+  }
+});
+
 
 app.get('/calendar', requireAuth, (req: Request, res: Response) => {
   try {

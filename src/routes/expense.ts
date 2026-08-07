@@ -1,6 +1,6 @@
 import express, { Router, Request, Response, NextFunction } from 'express';
 import { ObjectId, db } from '../config/database';
-import requireAuth from '../middleware/auth.middleware';
+import {AuthRequest,requireAuth} from '../middleware/auth.middleware';
 import validateExpense from '../middleware/validation.middleware';
 const router: Router = express.Router();
 
@@ -124,11 +124,12 @@ router.get('/fixedCost/list', requireAuth, async (req: Request, res: Response) =
 })
 
 //수정 화면 접속
-router.get('/edit/:id', async (req: Request, res: Response) => {
+router.get('/edit/:id',requireAuth ,async (req: Request, res: Response) => {
   let documentId = req.params.id as string;
-
+  let user = req.user as UserPayLoad
   let result = await db.collection<expenseInfo>('transection').findOne({
-    _id: new ObjectId(documentId)
+    _id: new ObjectId(documentId),
+    userId : user.userId
   })
   if (!result) {
     return res.send(404);
@@ -137,10 +138,10 @@ router.get('/edit/:id', async (req: Request, res: Response) => {
 })
 
 //수정 put 요청
-router.put('/edit/:id', async (req: Request, res: Response) => {
+router.put('/edit/:id',requireAuth ,async (req: Request, res: Response) => {
   //put 요청을 받아서
   //수정된 값을 수정하기
-
+  let user = req.user as UserPayLoad
   let id: string = req.params.id as string;
 
   const { event, category, price, explanation, isFixed } = req.body;
@@ -150,7 +151,8 @@ router.put('/edit/:id', async (req: Request, res: Response) => {
   const { month }: { month: number } = { month: date.getMonth() + 1 };
   const { day }: { day: number } = { day: date.getDate() };
   await db.collection<expenseInfo>('transection').updateOne({
-    _id: new ObjectId(id)
+    _id: new ObjectId(id),
+    userId : user.userId
   }, {
     $set: {
       category: category,

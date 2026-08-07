@@ -121,7 +121,29 @@
             font-size: 0.9rem;
             box-shadow: none;
         }
- 
+  
+        /* small circular icon button used for inline "설정하기" */
+        .btn-icon {
+            padding: 10px;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            line-height: 1;
+            border-width: 1.4px;
+        }
+        .btn-icon.btn-center {
+            display: flex;
+            margin: 18px auto 0;
+        }
+        .btn-icon svg {
+            width: 24px;
+            height: 24px;
+        }
+
         .btn-save:hover {
             background-color: #3a78c2;
             border-color: #3a78c2;
@@ -188,6 +210,18 @@
 
         .summary-item:hover .actions {
             opacity: 1;
+        }
+
+        /* when we want the action to always be visible (e.g., + for empty cards) */
+        .actions.always-visible {
+            opacity: 1;
+        }
+
+        .btn-icon.top-right {
+            width: 38px;
+            height: 38px;
+            padding: 6px;
+            font-size: 16px;
         }
 
         .actions .btn {
@@ -278,102 +312,98 @@
 
         <div class="alert-message" id="messageBox"></div>
 
-        <div class="budget-card">
-            <div class="d-flex justify-content-between align-items-center mb-4">
+        <!-- 예산 개요 화면 -->
+        <div class="budget-card" id="overviewPanel">
+            <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-4">
                 <div>
-                    <h4>예산 설정</h4>
-                    <p class="helper-text mb-0">월간 예산과 연간 예산을 각각 입력하고 저장하세요.</p>
-                </div>
-                <a href="/plan/budget" class="btn btn-outline-secondary btn-sm">예산 개요로 돌아가기</a>
-            </div>
-
-            <ul class="nav nav-tabs" role="tablist">
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link <%= activeTab === 'monthly' ? 'active' : '' %>" id="monthly-tab" data-bs-toggle="tab" data-bs-target="#monthly" type="button" role="tab">
-                        📆 월간 예산
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link <%= activeTab === 'annual' ? 'active' : '' %>" id="annual-tab" data-bs-toggle="tab" data-bs-target="#annual" type="button" role="tab">
-                        🎯 연간 예산
-                    </button>
-                </li>
-            </ul>
-
-            <div class="tab-content">
-                <div class="tab-pane fade <%= activeTab === 'monthly' ? 'show active' : '' %>" id="monthly" role="tabpanel">
-                    <div class="budget-card" style="box-shadow: none; border-left-color: #6c757d; padding: 24px; margin-top: 20px;">
-                        <h4>월간 예산 설정</h4>
-
-                        <!-- 💡 method-override 적용: action에 ?_method=PUT 추가 -->
-                        <form action="/plan/budget/save?_method=PUT" method="POST">
-                            <input type="hidden" name="planType" value="monthly">
-
-                            <div class="budget-display">
-                                <div class="budget-label">이번 달 예산</div>
-                                <div class="budget-amount">₩<span id="monthlyDisplay"><%= budgetInfo.monthlyAmount ? Number(budgetInfo.monthlyAmount).toLocaleString() : '0' %></span></div>
-                                <div class="summary-subtext" style="margin-top:8px;">기간: <%= budgetInfo.monthlyPeriod || '' %></div>
-                            </div>
-
-                            <div class="form-group">
-                                <label>예산 금액 (원)</label>
-                                <input type="number" id="monthlyBudget" name="budget" class="form-control form-control-lg" placeholder="0" min="0" oninput="updateMonthlyDisplay()" value="<%= budgetInfo.monthlyAmount || '' %>">
-                                <div class="helper-text">설정하고 싶은 월간 예산을 입력하세요.</div>
-                            </div>
-
-                            <button type="submit" class="btn-save">저장하기</button>
-                        </form>
-                    </div>
-                </div>
-
-                <div class="tab-pane fade <%= activeTab === 'annual' ? 'show active' : '' %>" id="annual" role="tabpanel">
-                    <div class="budget-card" style="box-shadow: none; border-left-color: #6c757d; padding: 24px; margin-top: 20px;">
-                        <h4>연간 예산 설정</h4>
-
-                        <!-- 💡 method-override 적용: action에 ?_method=PUT 추가 -->
-                        <form action="/plan/budget/save?_method=PUT" method="POST">
-                            <input type="hidden" name="planType" value="annual">
-
-                            <div class="budget-display">
-                                <div class="budget-label">이번 해 예산</div>
-                                <div class="budget-amount">₩<span id="annualDisplay"><%= budgetInfo.annualAmount ? Number(budgetInfo.annualAmount).toLocaleString() : '0' %></span></div>
-                                <div class="summary-subtext" style="margin-top:8px;">기간: <%= budgetInfo.annualPeriod || '' %></div>
-                            </div>
-
-                            <div class="form-group">
-                                <label>예산 금액 (원)</label>
-                                <input type="number" id="annualBudget" name="budget" class="form-control form-control-lg" placeholder="0" min="0" oninput="updateAnnualDisplay()" value="<%= budgetInfo.annualAmount || '' %>">
-                                <div class="helper-text">설정하고 싶은 연간 예산을 입력하세요.</div>
-                            </div>
-
-                            <button type="submit" class="btn-save">저장하기</button>
-                        </form>
-                    </div>
+                    <h4>예산 개요</h4>
+                    <p class="helper-text mb-0">월간 · 연간 예산과 지금까지 사용한 금액을 함께 확인할 수 있는 화면입니다.</p>
                 </div>
             </div>
+
+            <% if (hasBudget) { %>
+                <div class="summary-row">
+                    <div class="summary-item" id="monthlyCard">
+                        <div class="actions <%= hasMonthlyBudget ? '' : 'always-visible' %>">
+                            <% if (hasMonthlyBudget) { %>
+                                <a href="/budget/plan?tab=monthly" class="btn btn-outline-secondary btn-sm">수정</a>
+                                <form action="/plan/budget/delete" method="POST" style="display:inline;">
+                                    <input type="hidden" name="planType" value="monthly">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm btn-delete">삭제</button>
+                                </form>
+                            <% } else { %>
+                                <a href="/budget/plan?tab=monthly" class="btn btn-outline-primary btn-sm btn-icon top-right" title="예산 설정하기" aria-label="예산 설정하기">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                </a>
+                            <% } %>
+                        </div>
+
+                        <div class="summary-label">월간 예산</div>
+                        <% if (hasMonthlyBudget) { %>
+                            <div class="summary-value">₩<%= Number(budgetInfo.monthlyAmount).toLocaleString() %></div>
+                            
+                            <div class="summary-label" style="margin-top: 20px;">지금까지 사용한 금액</div>
+                            <div class="summary-value">₩<%= Number(monthlyUsedAmount).toLocaleString() %></div>
+                            <div class="summary-chip">남은 예산 ₩<%= Number(monthlyRemaining).toLocaleString() %></div>
+                        <% } else { %>
+                            <p class="helper-text">아직 월간 예산이 설정되어 있지 않습니다.</p>
+                        <% } %>
+                    </div>
+
+                    <div class="summary-item" id="annualCard">
+                        <div class="actions <%= hasAnnualBudget ? '' : 'always-visible' %>">
+                            <% if (hasAnnualBudget) { %>
+                                <a href="/budget/plan?tab=annual" class="btn btn-outline-secondary btn-sm">수정</a>
+                                <form action="/plan/budget/delete" method="POST" style="display:inline;">
+                                    <input type="hidden" name="planType" value="annual">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm btn-delete">삭제</button>
+                                </form>
+                            <% } else { %>
+                                <a href="/budget/plan?tab=annual" class="btn btn-outline-primary btn-sm btn-icon top-right" title="예산 설정하기" aria-label="예산 설정하기">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                </a>
+                            <% } %>
+                        </div>
+
+                        <div class="summary-label">연간 예산</div>
+                        <% if (hasAnnualBudget) { %>
+                            <div class="summary-value">₩<%= Number(budgetInfo.annualAmount).toLocaleString() %></div>
+                            
+                            <div class="summary-label" style="margin-top: 20px;">지금까지 사용한 금액</div>
+                            <div class="summary-value">₩<%= Number(annualUsedAmount).toLocaleString() %></div>
+                            <div class="summary-chip">남은 예산 ₩<%= Number(annualRemaining).toLocaleString() %></div>
+                        <% } else { %>
+                            <p class="helper-text">아직 연간 예산이 설정되어 있지 않습니다.</p>
+                        <% } %>
+                    </div>
+                </div>
+            <% } else { %>
+                <div class="summary-row">
+                    <div class="summary-item">
+                        <div class="actions always-visible">
+                            <a href="/budget/plan?tab=monthly" class="btn btn-outline-primary btn-sm btn-icon top-right" title="예산 설정하기" aria-label="예산 설정하기">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                            </a>
+                        </div>
+                        <div class="summary-label">월간 예산</div>
+                        <div class="summary-value">-</div>
+                        <p class="helper-text">월간 예산이 아직 설정되지 않았습니다.</p>
+                    </div>
+                    <div class="summary-item">
+                        <div class="actions always-visible">
+                            <a href="/budget/plan?tab=annual" class="btn btn-outline-primary btn-sm btn-icon top-right" title="예산 설정하기" aria-label="예산 설정하기">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                            </a>
+                        </div>
+                        <div class="summary-label">연간 예산</div>
+                        <div class="summary-value">-</div>
+                        <p class="helper-text">연간 예산이 아직 설정되지 않았습니다.</p>
+                    </div>
+                </div>
+            <% } %>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        function updateMonthlyDisplay() {
-            const el = document.getElementById('monthlyBudget');
-            const amount = el ? (parseInt(el.value) || 0) : 0;
-            const disp = document.getElementById('monthlyDisplay');
-            if (disp) disp.textContent = amount.toLocaleString();
-        }
-
-        function updateAnnualDisplay() {
-            const el = document.getElementById('annualBudget');
-            const amount = el ? (parseInt(el.value) || 0) : 0;
-            const disp = document.getElementById('annualDisplay');
-            if (disp) disp.textContent = amount.toLocaleString();
-        }
-
-        document.addEventListener('DOMContentLoaded', function() {
-            updateMonthlyDisplay();
-            updateAnnualDisplay();
-        });
-    </script>
 </body>
 </html>

@@ -1,112 +1,67 @@
-import { Router, Request, Response } from 'express';
-import bcrypt from 'bcrypt';
+// routes/auth.ts
+import { Router, Request, Response, response } from 'express';
+import passport from 'passport';
 import jwt from 'jsonwebtoken';
-import {ObjectId, db } from '../config/database';
+import { User } from '../types/user'; // User 인터페이스 경로
+
 
 const router = Router();
 
-//login get 요청
-router.get('/login', (req: Request, res: Response) => {
-  res.render('login.ejs');
-})
-
-interface User {
-  _id?: ObjectId;
-  username: string,
-  password: string,
-}
-
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key';
-
-//login POST 요청 
-router.post('/login/request', async (req: Request, res: Response) => {
+router.get('/login',(req:Request,res:Response)=>{
   try {
-    let result: null | User = await db.collection<User>('user').findOne({ username: req.body.username });
-    if (result === null) {
-      return res.redirect('/login?err=wrongName');
+    res.render('login.ejs');
+  } catch (error) {
+    
+  }
+})
+// 1. 프론트엔드에서 [구글 로그인] 버튼 누르면 도착하는 주소
+router.get(
+  '/auth/google',
+  passport.authenticate('google', { scope: ['profile', 'email'], session: false })
+);
+
+// 2. 구글 콘솔에 등록했던 그 리디렉션 URI 주소! (/auth/google/callback)
+router.get(
+  '/auth/google/callback',
+  passport.authenticate('google', { failureRedirect: '/login', session: false }),
+  async (req: Request, res: Response) => {
+    // passport.ts의 done(null, user)에서 넘겨준 DB 유저 객체
+    const user = req.user as User;
+
+    if (!user) {
+      return res.redirect('/login');
     }
 
-    // 2. 비밀번호 검증
-    const isMatch: boolean = await bcrypt.compare(req.body.password, result.password);
+    const userIdStr = user._id ? user._id.toString() : '';
 
-    // 비밀번호가 틀린 경우
-    if (!isMatch) {
-      return res.redirect('/login?err=wrongPass');
-    }
+    // 💡 A. 로그인 성공 시 실행할 로직 (예: 이번 달 고정지출 1회 체크)
+    // if (userIdStr) {
+    //   await processRecurringExpenses(userIdStr);
+    // }
 
+    // 💡 B. JWT 토큰 생성 (userId와 email 담기)
     const token = jwt.sign(
-      { userId: result._id, username: result.username },
-      JWT_SECRET,
-      { expiresIn: '1h' }
+      { userId: userIdStr, email: user.email },
+      process.env.JWT_SECRET || 'fallback_secret',
+      { expiresIn: '7d' }
     );
 
-    // 2. 쿠키(Cookie)에 토큰을 실어서 브라우저로 보냄
+    // 💡 C. 브라우저 쿠키에 HTTP-Only로 토큰 저장
     res.cookie('token', token, {
-      httpOnly: true, // 자바스크립트로 접근 못하게 막아 보안 강화 (XSS 방지)
-      maxAge: 3600000, // 1시간 동안 유효
-      // secure: true,   // 3. HTTPS 연결에서만 쿠키 전송 (실무 필수)
-      sameSite: 'lax' // 4. CSRF 공격 방지 (기본값 설정 권장)
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7일
     });
 
-    // 3. 메인 페이지로 이동 (브라우저는 위에서 설정한 쿠키를 자동으로 가지고 감)
-    return res.redirect('/');
-    // 1. id가 동일한 user 정보를 db에서 찾음.
-    // 2. 비밀번호 해시한 거랑 DB에 있는 해시된 비밀번호랑 같은 지 확인 
-    // 3. 맞으면 jwt 지급
-  } catch (error) {
-    console.log(error);
+    // 💡 D. 모든 로그인 처리가 끝났으니 메인 페이지(홈)로 이동!
+    res.redirect('/');
   }
-})
+);
 
-//register get 요청
-router.get('/register', (req: Request, res: Response) => {
-  try {
-    res.render('register.ejs',{user:req.user});
-  } catch (error) {
-    console.log(error)
-  }
-})
-
-
-router.post('/register/request', async (req: Request, res: Response) => {
-  try {
-    console.log(req.body);
-    const username: string = req.body.username;
-    const purePassword: string = req.body.password;
-    const pureRePassword: string = req.body.rePassword;
-    const password: string = await bcrypt.hash(purePassword, 10);
-
-
-    let idFound: User | null = await db.collection<User>('user').findOne({ username: username });
-    let user: User = {
-      username,
-      password: password
-    }
-    if (idFound === null) {
-      if (purePassword === pureRePassword) {
-        await db.collection<User>('user').insertOne(user);
-        res.redirect('/');
-      }
-      else {
-        res.redirect('/register?err=wrongPass');
-      }
-    }
-    //1. id가 중복인지 확인
-    //2. 비밀번호가 비밀번호확인칸이랑 같은 지 확인
-    //3. 같으면 user DB에 내용 저장
-
-  } catch (err) {
-    console.log(err);
-  }
-})
-
-router.post('/logout', (req: Request, res: Response) => {
-  // 1. 쿠키에 저장된 토큰 지우기
-  res.clearCookie('token'); 
-  
-  // 2. 응답 보내기 (페이지 이동 또는 JSON 응답)
-  return res.redirect('/login');
+// 3. 로그아웃 (쿠키 삭제)
+router.get('/logout', (req: Request, res: Response) => {
+  res.clearCookie('token');
+  res.redirect('/login');
 });
-
 
 export default router;
