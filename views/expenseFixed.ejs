@@ -1,18 +1,20 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>나의 가계부 목록</title>
+  <title>나의 가계부 - 고정 지출 목록</title>
   <!-- 💡 부트스트랩 5 CDN 링크 추가 -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="/main.css" rel="stylesheet"> 
+  <link href="/main.css" rel="stylesheet">
   <script src="https://kit.fontawesome.com/3cda4bc1c7.js" crossorigin="anonymous"></script>
-   
+
   <style>
     .action-buttons {
       min-width: 96px;
     }
+
     .action-buttons .action-icon {
       opacity: 0;
       display: inline-flex;
@@ -27,14 +29,17 @@
       transition: opacity 0.15s ease-in-out, background-color 0.15s ease-in-out, color 0.15s ease-in-out, border-color 0.15s ease-in-out;
       text-decoration: none;
     }
+
     tr:hover .action-buttons .action-icon {
       opacity: 1;
     }
+
     .action-buttons .action-icon:hover {
       color: #0d6efd;
       background: rgba(13, 110, 253, 0.1);
       border-color: rgba(13, 110, 253, 0.2);
     }
+
     .action-buttons .action-icon.delete-icon:hover {
       color: #dc3545;
       background: rgba(220, 53, 69, 0.1);
@@ -42,13 +47,16 @@
     }
   </style>
 </head>
+
 <body class="bg-light">
   <%- include('nav.ejs') %>
   <div class="container my-5" style="max-width: 900px;">
     <!-- 헤더 구역 -->
     <div class="d-flex justify-content-between align-items-center mb-4">
-      <h1 class="h3 mb-0 text-dark fw-bold">💰 가계부 고정   지출 내역</h1>
-      <a href="/expense/write" class="btn btn-primary fw-semibold shadow-sm"><i class="fa-solid fa-circle-plus"></i> 새 지출 내역</a>
+      <h1 class="h3 mb-0 text-dark fw-bold">💰 가계부 고정 지출 내역</h1>
+      <a href="/expense/write?isFixed=true" class="btn btn-primary fw-semibold shadow-sm">
+        <i class="fa-solid fa-circle-plus"></i> 새 지출 내역
+      </a>
     </div>
 
     <!-- 총합계 요약 카드 구역 -->
@@ -78,30 +86,32 @@
           <tbody>
             <% if (items.length === 0) { %>
               <tr>
-                <td colspan="5" class="text-center py-5 text-secondary">
-                  기록된 지출 내역이 없습니다. 새로운 지출을 등록해 보세요!
+                <td colspan="6" class="text-center py-5 text-secondary">
+                  기록된 고정 지출 내역이 없습니다. 새로운 지출을 등록해 보세요!
                 </td>
               </tr>
             <% } else { %>
               <% items.forEach(function(item) { %>
                 <tr>
                   <td class="ps-4 text-secondary small">
-                    <%= item.year %>-<%= String(item.month).padStart(2, '0') %>-<%= String(item.day).padStart(2, '0') %>
+                    <%= item.expenseInfo.year %>-<%= String(item.expenseInfo.month).padStart(2, '0') %>-<%= String(item.expenseInfo.day).padStart(2, '0') %>
                   </td>
                   <td>
-                    <!-- 카테고리별로 이쁘게 배지(Badge) 처리 -->
+                    <!-- 카테고리 배지 -->
                     <span class="badge bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle rounded-pill px-3">
-                      <%= item.category %>
+                      <%= item.expenseInfo.category %>
                     </span>
                   </td>
-                  <td><span class="fw-semibold text-dark"><%= item.event %></span></td>
-                  <td class="text-danger fw-semibold"><%= item.price.toLocaleString() %>원</td>
-                  <td class="text-dark pe-4 small text-truncate" style="max-width: 200px;"><%= item.explanation %></td>
+                  <td><span class="fw-semibold text-dark"><%= item.expenseInfo.event %></span></td>
+                  <td class="text-danger fw-semibold"><%= item.expenseInfo.price.toLocaleString() %>원</td>
+                  <td class="text-dark pe-4 small text-truncate" style="max-width: 200px;"><%= item.expenseInfo.explanation %></td>
                   <td class="text-end pe-4 action-buttons">
-                    <a href="/expense/edit/<%= item._id %>" class="action-icon edit-icon" title="수정">
+                    <a href="/expense/edit/regular/<%= item._id %>" class="action-icon edit-icon" title="수정">
                       <i class="fa-solid fa-pen-to-square"></i>
                     </a>
-                    <a href="/expense/delete/<%= item._id %>" class="action-icon delete-icon" title="삭제">
+                    <!-- 💡 삭제 버튼 클릭 이벤트 연결 -->
+                    <a href="#" class="action-icon delete-icon" title="삭제"
+                      onclick="deleteRegularItem('<%= item._id %>', event)">
                       <i class="fa-solid fa-trash"></i>
                     </a>
                   </td>
@@ -114,7 +124,43 @@
     </div>
   </div>
 
+  <script>
+    async function deleteRegularItem(id, event) {
+      // 1. <a> 태그의 기본 페이지 이동 방지
+      event.preventDefault();
+
+      // 2. 실수 방지를 위한 삭제 확인 팝업
+      if (!confirm('정말로 이 고정 지출 내역을 삭제하시겠습니까?')) {
+        return;
+      }
+
+      try {
+        // 3. 백엔드 DELETE API 호출 (/expense/delete/regular/:id)
+        const response = await fetch(`/expense/delete/regular/${id}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          alert('삭제되었습니다.');
+          // 삭제 성공 시 목록 새로고침
+          window.location.reload();
+        } else {
+          alert(result.message || '삭제 처리 중 오류가 발생했습니다.');
+        }
+      } catch (error) {
+        console.error('삭제 요청 중 에러 발생:', error);
+        alert('서버와 통신하는 중 오류가 발생했습니다.');
+      }
+    }
+  </script>
+
   <!-- 💡 부트스트랩 자바스크립트 CDN -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
+
 </html>

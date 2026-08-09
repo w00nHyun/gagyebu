@@ -4,6 +4,11 @@ export interface User {
   _id?: ObjectId | string;
   email: string;
   name: string;
-  googleId?: string;
+  googleId: string;
   createdAt?: Date;
+} 
+
+export interface UserPayLoad {
+  name: string,
+  userId: string
 }
