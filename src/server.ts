@@ -10,6 +10,7 @@ import jwt from 'jsonwebtoken';
 import authRouter from './routes/auth';
 import expenseRouter from './routes/expense';
 import {requireAuth} from './middleware/auth.middleware';
+import { UserPayLoad } from './types/user';
 dotenv.config();
 
 
@@ -91,10 +92,6 @@ app.use('', authRouter);  //auth 관련된 것들
 app.use('/expense', expenseRouter); //가계부 작성, 내역보기, 고정지출
 
 //데이터 형식 모음 
-interface UserPayLoad {
-  username: string,
-  userId: string
-}
 
 interface GroupStat<T> {
   _id: T;
@@ -275,13 +272,13 @@ app.put('/plan/budget/save',requireAuth ,async (req: Request, res: Response) => 
     const result : budgetPlan= {
       planType,
       budget,
-      username : user.username,
+      name : user.name,
       userId : user.userId
     }
     // 기존 예산이 있으면 업데이트하고, 없으면 새로 생성(upsert)
     await db.collection('plan').updateOne(
       { userId: user.userId, planType: planType },
-      { $set: { budget: budget, username: user.username, updatedAt: new Date() } },
+      { $set: { budget: budget, username: user.name, updatedAt: new Date() } },
       { upsert: true }
     );      
     return res.redirect('/budget');

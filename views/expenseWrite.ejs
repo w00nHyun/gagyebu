@@ -40,7 +40,7 @@
 
                 <div class="form-check form-switch m-0 p-0 d-flex align-items-center">
                     <input class="form-check-input custom-switch" type="checkbox" role="switch" id="isFixedExpense"
-                        name="isFixed" <%= (typeof result !== 'undefined' && result.isFixed) ? 'checked' : '' %>>
+                        name="isFixed" <%= (typeof activeIsFixed !== 'undefined' && activeIsFixed) ? 'checked' : '' %> >
                 </div>
             </div>
 
@@ -84,14 +84,13 @@
                 <span class="input-group-text">원</span>
             </div>
 
-            <!-- 5. 날짜 (Flatpickr + 퀵 버튼 + 토글 라벨) -->
+            <!-- 5. 날짜 (Flatpickr) -->
             <div class="input-group mb-3">
                 <span class="input-group-text" id="dateLabel">
                     <%= (typeof result !== 'undefined' && result.isFixed) ? '시작 날짜' : '날짜' %>
                 </span>
                 <input type="text" id="datePicker" name="date" class="form-control bg-white" placeholder="날짜 선택" 
                     value="<%= (typeof result !== 'undefined' && result.date) ? result.date : '' %>" readonly required>
-
             </div>
 
             <!-- 6. 설명 (explanation) -->
@@ -124,7 +123,6 @@
         const dateLabel = document.getElementById('dateLabel');
 
         isFixedCheckbox.addEventListener('change', function () {
-            // 스위치 체크 여부에 따라 라벨 변경
             dateLabel.textContent = this.checked ? '시작 날짜' : '날짜';
         });
 
@@ -135,11 +133,12 @@
             const expenseIdInput = document.getElementById('expenseId');
             const expenseId = expenseIdInput ? expenseIdInput.value : null;
 
-            const isFixed = isFixedCheckbox.checked;
+            // 💡 핵심 수정: 체크 시 문자열 'on'으로 전달하도록 설정
+            const isFixedVal = isFixedCheckbox.checked ? 'on' : undefined;
 
             const formData = {
                 moneyType: 'expense',
-                isFixed: isFixed, // boolean (true / false)
+                isFixed: isFixedVal, // 체크 시 'on' 전송
                 event: document.getElementById('group').value,
                 category: document.getElementById('category').value,
                 price: Number(document.getElementById('amount').value),
@@ -147,7 +146,7 @@
                 explanation: document.getElementById('description').value
             };
 
-            const targetUrl ='/expense/post';
+            const targetUrl = '/expense/post';
 
             try {
                 const response = await fetch(targetUrl, {
