@@ -1,0 +1,25 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches: [ "main" ] # 본인 메인 브랜치 이름 (master일 경우 master로 변경)
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: SSH로 EC2 접속 및 배포 실행
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USERNAME }}
+        key: ${{ secrets.EC2_KEY }}
+        port: ${{ secrets.EC2_PORT }}
+        script: |
+          cd ~/gagyebu
+          git pull origin main
+          npm install
+          npm run build
+          sudo pm2 reload gagyebu || sudo pm2 start dist/server.js --name "gagyebu"
+          sudo pm2 save
