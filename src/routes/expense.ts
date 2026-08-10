@@ -55,7 +55,7 @@ router.post('/post', validateExpense, async (req: Request, res: Response) => {
       event,
       category,
       price: Number(price),
-      explanation,
+      explanation ,
       isFixed: fix,
       moneyType: 'expense',
       year,
