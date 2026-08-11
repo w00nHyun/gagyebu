@@ -219,10 +219,12 @@ router.delete('/delete/regular/:id', requireAuth, async (req: Request, res: Resp
 
 
 
+
 //수정 화면 접속
 router.get('/edit/:id', requireAuth, async (req: Request, res: Response) => {
   let documentId = req.params.id as string;
   let user = req.user as UserPayLoad
+  console.log(req.params.id);
   let result = await db.collection<expenseInfo>('transection').findOne({
     _id: new ObjectId(documentId),
     userId: user.userId
@@ -230,7 +232,7 @@ router.get('/edit/:id', requireAuth, async (req: Request, res: Response) => {
   if (!result) {
     return res.send(404);
   }
-  res.render('expenseEdit.ejs', { result: result });
+  res.render('expenseEdit.ejs', { result: result,url : '' });
 })
 
 
