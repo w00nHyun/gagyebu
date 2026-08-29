@@ -9,9 +9,7 @@ export interface expenseInfo extends UserPayLoad {
   explanation: string,
   isFixed: boolean,
   moneyType: 'expense',
-  year: number,
-  month: number,
-  day: number
+  date : string
 }
 
 

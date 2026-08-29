@@ -6,6 +6,8 @@ import { UserPayLoad } from '../types/user';
 
 const router = Router();
 
+
+// 고정 지출 리스트 GET 요청
 router.get('/fixedCost/list', requireAuth, async (req: Request, res: Response) => {
   try {
     const user = req.user as UserPayLoad;
@@ -20,6 +22,9 @@ router.get('/fixedCost/list', requireAuth, async (req: Request, res: Response) =
   }
 });
 
+
+
+// 고정 지출 수정화면 GET 요청
 router.get('/edit/regular/:id', requireAuth, async (req: Request, res: Response) => {
   try {
     const documentId = req.params.id as string;
@@ -30,7 +35,7 @@ router.get('/edit/regular/:id', requireAuth, async (req: Request, res: Response)
     });
 
     if (!result) {
-      return res.send(404);
+      return res.status(404).send('잘못된 요청');
     }
 
     res.render('expenseEdit.ejs', { result: result.expenseInfo, url: result._id });
@@ -40,15 +45,18 @@ router.get('/edit/regular/:id', requireAuth, async (req: Request, res: Response)
   }
 });
 
+
+
+
+//고정 지출 수정 PUT 요청
 router.put('/edit/regular/:id', requireAuth, async (req: Request, res: Response) => {
   try {
     const documentId = req.params.id as string;
     const user = req.user as UserPayLoad;
-    const { event, category, price, explanation } = req.body;
-    const date: Date = new Date(req.body.date);
-    const year = date.getFullYear();
-    const month = date.getMonth() + 1;
-    const day = date.getDate();
+    const { event, category, price, explanation} = req.body;
+    const date: string = req.body.date;
+    
+    
     const result = await db.collection('regular').updateOne(
       { _id: new ObjectId(documentId), userId: user.userId },
       {
@@ -56,10 +64,8 @@ router.put('/edit/regular/:id', requireAuth, async (req: Request, res: Response)
           'expenseInfo.event': event,
           'expenseInfo.category': category,
           'expenseInfo.price': price,
-          'expenseInfo.explantion': explanation,
-          'expenseInfo.year': year,
-          'expenseInfo.month': month,
-          'expenseInfo.day': day
+          'expenseInfo.explanation': explanation,
+          'expenseInfo.date' : date
         }
       }
     );
@@ -79,6 +85,8 @@ router.put('/edit/regular/:id', requireAuth, async (req: Request, res: Response)
   }
 });
 
+
+//고정지출 삭제 DELETE 요청
 router.delete('/delete/regular/:id', requireAuth, async (req: Request, res: Response) => {
   try {
     const documentId = req.params.id as string;

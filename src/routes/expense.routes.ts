@@ -8,6 +8,8 @@ import { syncFixedExpenses } from '../middleware/expense.middleware';
 
 const router: Router = express.Router();
 
+
+// 일반 지출 쓰기 GET 요청 
 router.get('/write', requireAuth, (req: Request, res: Response) => {
   try {
     const isFixed: boolean = Boolean(req.query.isFixed);
@@ -18,13 +20,16 @@ router.get('/write', requireAuth, (req: Request, res: Response) => {
   }
 });
 
-router.post('/post', validateExpense, async (req: Request, res: Response) => {
+
+
+
+
+router.post('/post', requireAuth,validateExpense, async (req: Request, res: Response) => {
   try {
-    const { event, category, price, explanation, isFixed } = req.body;
-    const date: Date = new Date(req.body.date);
-    const year = date.getFullYear();
-    const month = date.getMonth() + 1;
-    const day = date.getDate();
+    const { event, category, price, explanation, isFixed,date } = req.body;
+    
+    const [year,month] = date.split('-').map(Number);
+    
     const { userId, name } = req.user as UserPayLoad;
     const fix: boolean = isFixed === 'on';
     const result: expenseInfo = {
@@ -34,9 +39,7 @@ router.post('/post', validateExpense, async (req: Request, res: Response) => {
       explanation,
       isFixed: fix,
       moneyType: 'expense',
-      year,
-      month,
-      day,
+      date,
       userId,
       name
     };
@@ -66,6 +69,10 @@ router.post('/post', validateExpense, async (req: Request, res: Response) => {
   }
 });
 
+
+
+
+
 router.get('/list', requireAuth, async (req: Request, res: Response) => {
   try {
     const user = req.user as UserPayLoad;
@@ -82,6 +89,10 @@ router.get('/list', requireAuth, async (req: Request, res: Response) => {
   }
 });
 
+
+
+
+
 router.get('/edit/:id', requireAuth, async (req: Request, res: Response) => {
   const documentId = req.params.id as string;
   const user = req.user as UserPayLoad;
@@ -97,14 +108,16 @@ router.get('/edit/:id', requireAuth, async (req: Request, res: Response) => {
   res.render('expenseEdit.ejs', { result, url: '' });
 });
 
-router.put('/edit/:id', requireAuth, async (req: Request, res: Response) => {
+
+
+
+
+router.put('/edit/:id', requireAuth, validateExpense, async (req: Request, res: Response) => {
   const user = req.user as UserPayLoad;
   const id = req.params.id as string;
-  const { event, category, price, explanation, isFixed } = req.body;
-  const date: Date = new Date(req.body.date);
-  const year = date.getFullYear();
-  const month = date.getMonth() + 1;
-  const day = date.getDate();
+  const { event, category, price, explanation, isFixed,date } = req.body;
+  
+  
 
   await db.collection<expenseInfo>('transection').updateOne(
     { _id: new ObjectId(id), userId: user.userId },
@@ -115,15 +128,17 @@ router.put('/edit/:id', requireAuth, async (req: Request, res: Response) => {
         event,
         explanation,
         isFixed,
-        year,
-        month,
-        day
+        date
       }
     }
   );
 
   res.status(200).json({ success: true, message: '저장 완료' });
 });
+
+
+
+
 
 router.delete('/delete/:id', async (req: Request, res: Response) => {
   try {
@@ -142,5 +157,10 @@ router.delete('/delete/:id', async (req: Request, res: Response) => {
     res.status(500).json({ success: false, message: '삭제 처리 중 오류가 발생했습니다.' });
   }
 });
+
+
+
+
+
 
 export default router;

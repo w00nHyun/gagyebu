@@ -14,6 +14,9 @@ router.get('/calendar', requireAuth, (req: Request, res: Response) => {
   }
 });
 
+
+
+
 router.get('/calendar/data', requireAuth, async (req: Request, res: Response) => {
   try {
     const from = req.query.from as string;
@@ -43,49 +46,15 @@ router.get('/calendar/data', requireAuth, async (req: Request, res: Response) =>
       return res.status(400).json({ message: '쿼리파라미터 기간 유효성 오류' });
     }
 
-    const buildDateInt = (year: number, month: number, day: number) =>
-      year * 10000 + month * 100 + day;
-    const fromInt = buildDateInt(fromYear, fromMonth, fromDay);
-    const toInt = buildDateInt(toYear, toMonth, toDay);
     const user = req.user as UserPayLoad;
 
-    const rawItems = await db.collection('transection').aggregate([
-      {
-        $match: {
-          userId: user.userId,
-          $expr: {
-            $and: [
-              {
-                $gte: [
-                  { $add: [{ $multiply: ['$year', 10000] }, { $multiply: ['$month', 100] }, '$day'] },
-                  fromInt
-                ]
-              },
-              {
-                $lte: [
-                  { $add: [{ $multiply: ['$year', 10000] }, { $multiply: ['$month', 100] }, '$day'] },
-                  toInt
-                ]
-              }
-            ]
-          }
-        }
-      },
-      {
-        $project: {
-          _id: 1,
-          event: 1,
-          category: 1,
-          price: 1,
-          explanation: 1,
-          isFixed: 1,
-          moneyType: 1,
-          year: 1,
-          month: 1,
-          day: 1
-        }
+    const rawItems = await db.collection('transection').find({
+      userId: user.userId,
+      date: {
+        $gte: from,
+        $lte: to
       }
-    ]).toArray();
+    }).sort({ date: 1 }).toArray();
 
     type CalendarDay = {
       date: string;
@@ -127,8 +96,7 @@ router.get('/calendar/data', requireAuth, async (req: Request, res: Response) =>
     }
 
     rawItems.forEach((item: any) => {
-      const dateString = formatDate(item.year, item.month, item.day);
-      const entry = dayMap[dateString];
+      const entry = dayMap[item.date];
       if (!entry) return;
 
       const amount = Number(item.price) || 0;

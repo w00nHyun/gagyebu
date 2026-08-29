@@ -14,25 +14,51 @@ router.get('/budget', requireAuth, async (req: Request, res: Response) => {
   try {
     const user = req.user as UserPayLoad;
     const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const year : number= today.getFullYear();
+    const month : number = today.getMonth() + 1;
+    const nextYear = (month === 12) ? year+1 : year;
+    const nextMonth = (month === 12) ? 1 : month+1;
+
+    //월 데이터
+    const monthlyStartDate = `${year}-${String(month).padStart(2, '0')}-01`;
+    const monthlyendDate = `${nextYear}-${String(nextMonth).padStart(2, '0')}-01`;
+
+    const anuualStartDate = `${year}-01-01`;
+    const annualEndDate =  `${year+1}-01-01`;
 
     const monthlyResult = await db.collection('plan').findOne(
       { userId: user.userId, planType: 'monthly' },
       { sort: { updatedAt: -1 } }
     );
+
+
     const annualResult = await db.collection('plan').findOne(
       { userId: user.userId, planType: 'annual' },
       { sort: { updatedAt: -1 } }
     );
+
+
     const monthlyUsedAgg = await db.collection('transection').aggregate([
-      { $match: { userId: user.userId, year, month: Number(month) } },
+      { $match: { userId: user.userId, 
+          date : {
+            $gte: monthlyStartDate,
+            $lt : monthlyendDate
+          }
+       } },
       { $group: { _id: null, used: { $sum: '$price' } } }
     ]).toArray();
+
+
     const annualUsedAgg = await db.collection('transection').aggregate([
-      { $match: { userId: user.userId, year } },
+      { $match: { userId: user.userId, 
+        date : {
+           $gte: anuualStartDate,
+            $lt : annualEndDate
+        }
+       } },
       { $group: { _id: null, used: { $sum: '$price' } } }
     ]).toArray();
+
 
     const budgetData = {
       monthlyAmount: monthlyResult?.budget ?? null,
