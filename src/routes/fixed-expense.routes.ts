@@ -13,7 +13,7 @@ router.get('/fixedCost/list', requireAuth, async (req: Request, res: Response) =
     const user = req.user as UserPayLoad;
     const result = await db.collection<regularData>('regular').find({
       userId: user.userId
-    }).toArray();
+    }).sort({ 'expenseInfo.date': -1 }).toArray();
     const total = result.reduce((sum, item) => sum + item.expenseInfo.price, 0);
 
     res.render('expenseFixed.ejs', { items: result, total });
