@@ -17,6 +17,11 @@
 
 <body>
     <%- include('nav.ejs') %>
+    <%
+        const initialDate = typeof result !== 'undefined' && result.date
+            ? result.date
+            : (typeof selectedDate !== 'undefined' ? selectedDate : '');
+    %>
 
     <div class="container mt-5" style="max-width: 600px;">
         <h2 class="mb-4 text-center">
@@ -90,7 +95,7 @@
                     <%= (typeof result !== 'undefined' && result.isFixed) ? '시작 날짜' : '날짜' %>
                 </span>
                 <input type="text" id="datePicker" name="date" class="form-control bg-white" placeholder="날짜 선택" 
-                    value="<%= (typeof result !== 'undefined' && result.date) ? result.date : '' %>" readonly required>
+                    value="<%= initialDate %>" readonly required>
             </div>
 
             <!-- 6. 설명 (explanation) -->
@@ -114,7 +119,7 @@
         const fp = flatpickr("#datePicker", {
             locale: "ko",
             dateFormat: "Y-m-d",
-            defaultDate: "<%= (typeof result !== 'undefined' && result.date) ? result.date : 'today' %>",
+            defaultDate: <%- JSON.stringify(initialDate || 'today') %>,
             disableMobile: "true"
         });
 

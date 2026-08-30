@@ -13,8 +13,14 @@ const router: Router = express.Router();
 router.get('/write', requireAuth, (req: Request, res: Response) => {
   try {
     const isFixed: boolean = Boolean(req.query.isFixed);
-    console.log(isFixed);
-    res.render('expenseWrite.ejs', { activeIsFixed: isFixed });
+    const selectedDate = typeof req.query.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(req.query.date)
+      ? req.query.date
+      : '';
+
+    res.render('expenseWrite.ejs', {
+      activeIsFixed: isFixed,
+      selectedDate
+    });
   } catch (error) {
     console.log(error);
   }
@@ -24,12 +30,12 @@ router.get('/write', requireAuth, (req: Request, res: Response) => {
 
 
 
-router.post('/post', requireAuth,validateExpense, async (req: Request, res: Response) => {
+router.post('/post', requireAuth, validateExpense, async (req: Request, res: Response) => {
   try {
-    const { event, category, price, explanation, isFixed,date } = req.body;
-    
-    const [year,month] = date.split('-').map(Number);
-    
+    const { event, category, price, explanation, isFixed, date } = req.body;
+
+    const [year, month] = date.split('-').map(Number);
+
     const { userId, name } = req.user as UserPayLoad;
     const fix: boolean = isFixed === 'on';
     const result: expenseInfo = {
@@ -75,14 +81,41 @@ router.post('/post', requireAuth,validateExpense, async (req: Request, res: Resp
 
 router.get('/list', requireAuth, async (req: Request, res: Response) => {
   try {
+    const queryMonth = req.query.month;
+
+    //잘못된 요청시 redirect 위치 저장
+    const now : Date = new Date();
+    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    //query 문이 작성 안된 경우
+    if (queryMonth === undefined) {
+      return res.redirect(`/expense/list?month=${currentMonth}`);
+    }
+    //월 요청이 잘 못된 경우
+    if (
+      typeof queryMonth !== 'string' ||
+      !/^\d{4}-(0[1-9]|1[0-2])$/.test(queryMonth)
+    ) {
+      return res.redirect(`/expense/list?month=${currentMonth}`);
+    }
+
+    const from = `${queryMonth}-01`;
+    const to = `${queryMonth}-31`;
+
     const user = req.user as UserPayLoad;
     const result = await db.collection<expenseInfo>('transection').find({
       userId: user.userId,
-      moneyType: 'expense'
-    }).toArray();
+      moneyType: 'expense',
+      date : {
+        $gte: from,
+        $lte: to
+      }
+    })
+      .sort({ date: 1 })
+      .toArray();
+
     const total = result.reduce((sum, item) => sum + item.price, 0);
 
-    res.render('expenseList.ejs', { items: result, total });
+    res.render('expenseList.ejs', { items: result, total ,selectedMonth : queryMonth});
   } catch (error) {
     console.log(error);
     res.send(400);
@@ -115,9 +148,9 @@ router.get('/edit/:id', requireAuth, async (req: Request, res: Response) => {
 router.put('/edit/:id', requireAuth, validateExpense, async (req: Request, res: Response) => {
   const user = req.user as UserPayLoad;
   const id = req.params.id as string;
-  const { event, category, price, explanation, isFixed,date } = req.body;
-  
-  
+  const { event, category, price, explanation, isFixed, date } = req.body;
+
+
 
   await db.collection<expenseInfo>('transection').updateOne(
     { _id: new ObjectId(id), userId: user.userId },

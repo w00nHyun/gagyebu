@@ -49,6 +49,12 @@
 
 <body class="bg-light">
   <%- include('nav.ejs') %>
+    <%
+      const today = new Date();
+      const defaultMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+      const currentSelectedMonth = typeof selectedMonth !== 'undefined' ? selectedMonth : defaultMonth;
+      const [currentSelectedYear, currentSelectedMonthNumber] = currentSelectedMonth.split('-');
+    %>
     <div class="container my-5" style="max-width: 900px;">
       <!-- 헤더 구역 -->
       <div class="d-flex justify-content-between align-items-center mb-4">
@@ -57,12 +63,36 @@
           지출 내역</a>
       </div>
 
+      <!-- 월별 조회 -->
+      <div class="card border-0 shadow-sm mb-4">
+        <div id="month-navigator" class="card-body p-3 bg-white rounded d-flex align-items-center justify-content-between"
+          data-selected-month="<%= currentSelectedMonth %>">
+          <button type="button" id="previous-month" class="btn btn-outline-secondary border-0" aria-label="이전 달">
+            <i class="fa-solid fa-chevron-left"></i>
+            <span class="d-none d-sm-inline ms-1">이전 달</span>
+          </button>
+          <strong class="fs-5 text-dark">
+            <%= currentSelectedYear %>년 <%= Number(currentSelectedMonthNumber) %>월
+          </strong>
+          <button type="button" id="next-month" class="btn btn-outline-secondary border-0" aria-label="다음 달">
+            <span class="d-none d-sm-inline me-1">다음 달</span>
+            <i class="fa-solid fa-chevron-right"></i>
+          </button>
+        </div>
+      </div>
+
       <!-- 총합계 요약 카드 구역 -->
       <div class="card border-0 shadow-sm mb-4">
         <div class="card-body p-4 bg-white rounded">
-          <span class="text-secondary small fw-medium text-uppercase tracking-wider">총 누적 지출 금액</span>
+          <span id="expense-total-label" class="text-secondary small fw-medium text-uppercase tracking-wider">
+            <% if (currentSelectedMonth) { %>
+              <%= currentSelectedMonth.replace('-', '년 ') %>월 지출 금액
+            <% } else { %>
+              총 누적 지출 금액
+            <% } %>
+          </span>
           <div class="display-6 text-danger fw-bold mt-1">
-            <span class="fs-4 fw-normal text-dark">
+            <span id="expense-total" class="fs-4 fw-normal text-dark">
               <%= total.toLocaleString() %>원
             </span>
           </div>
@@ -86,8 +116,12 @@
             <tbody>
               <% if (items.length===0) { %>
                 <tr>
-                  <td colspan="5" class="text-center py-5 text-secondary">
-                    기록된 지출 내역이 없습니다. 새로운 지출을 등록해 보세요!
+                  <td colspan="6" class="text-center py-5 text-secondary">
+                    <% if (currentSelectedMonth) { %>
+                      선택한 월에 기록된 지출 내역이 없습니다.
+                    <% } else { %>
+                      기록된 지출 내역이 없습니다. 새로운 지출을 등록해 보세요!
+                    <% } %>
                   </td>
                 </tr>
                 <% } else { %>
@@ -131,6 +165,33 @@
       </div>
     </div>
     <script>
+      const monthNavigator = document.getElementById('month-navigator');
+      const previousMonthButton = document.getElementById('previous-month');
+      const nextMonthButton = document.getElementById('next-month');
+      const selectedMonth = monthNavigator.dataset.selectedMonth;
+
+      function moveMonth(month, amount) {
+        const [year, monthNumber] = month.split('-').map(Number);
+        const movedDate = new Date(year, monthNumber - 1 + amount, 1);
+
+        return [
+          movedDate.getFullYear(),
+          String(movedDate.getMonth() + 1).padStart(2, '0')
+        ].join('-');
+      }
+
+      function moveToMonth(month) {
+        window.location.href = `/expense/list?month=${encodeURIComponent(month)}`;
+      }
+
+      previousMonthButton.addEventListener('click', () => {
+        moveToMonth(moveMonth(selectedMonth, -1));
+      });
+
+      nextMonthButton.addEventListener('click', () => {
+        moveToMonth(moveMonth(selectedMonth, 1));
+      });
+
       async function deleteExpense(id, event) {
         // 1. <a> 태그의 기본 페이지 이동 방지
         event.preventDefault();

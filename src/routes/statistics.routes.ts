@@ -42,10 +42,37 @@ const mapStatsToLabels = (
 router.get('/stat', requireAuth, async (req: Request, res: Response) => {
   try {
     const user = req.user as UserPayLoad;
+    const queryMonth = req.query.date;
+
+    const now : Date = new Date();
+    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    if(queryMonth === undefined){
+      return res.redirect(`/stat?date=${currentMonth}`);
+    }
+
+    if (
+      typeof queryMonth !== 'string' ||
+      !/^\d{4}-(0[1-9]|1[0-2])$/.test(queryMonth)
+    ) {
+      return res.redirect(`/stat?date=${currentMonth}`);
+    }
+
+    const from = `${queryMonth}-01`;
+    const to = `${queryMonth}-31`;
+
+
     const categoryLabel = ['식비', '교통비', '주거/통신', '문화/여가', '구독비', '쇼핑비', '병원비', '기타'];
     const eventLabel = ['개인지출', '친구', '데이트', '지인', '가족', '비즈니스', '기타이벤트'];
+
     const [stats] = await db.collection('transection').aggregate([
-      { $match: { userId: user.userId } },
+      { $match: {
+        userId: user.userId,
+        moneyType: 'expense',
+        date: {
+          $gte: from,
+          $lte: to,
+        }
+      } },
       {
         $facet: {
           categoryStats: [
@@ -69,7 +96,7 @@ router.get('/stat', requireAuth, async (req: Request, res: Response) => {
       eventLabel
     };
 
-    res.render('expenseChart.ejs', { chartData });
+    res.render('expenseChart.ejs', { chartData,selectedMonth : queryMonth });
   } catch (error) {
     console.log(error);
     res.status(500).send('서버 에러');
