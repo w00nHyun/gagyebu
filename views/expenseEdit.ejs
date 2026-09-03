@@ -126,21 +126,29 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         const initialDateVal = document.getElementById('datePicker').value;
+        const today = new Date();
+        const minAllowedDate = new Date(
+            today.getFullYear() - 5,
+            today.getMonth(),
+            today.getDate()
+        );
+        const isFixedCheckbox = document.getElementById('isFixedExpense');
 
         // 1. Flatpickr 초기화
         const fp = flatpickr("#datePicker", {
             locale: "ko",
             dateFormat: "Y-m-d",
-            defaultDate: initialDateVal ? initialDateVal : "today"
+            defaultDate: initialDateVal ? initialDateVal : "today",
+            minDate: isFixedCheckbox && isFixedCheckbox.checked ? minAllowedDate : null
         });
 
-        const isFixedCheckbox = document.getElementById('isFixedExpense');
         const dateLabel = document.getElementById('dateLabel');
 
         // 라벨 토글
         if (isFixedCheckbox) {
             isFixedCheckbox.addEventListener('change', function () {
                 dateLabel.textContent = this.checked ? '시작 날짜' : '날짜';
+                fp.set('minDate', this.checked ? minAllowedDate : null);
             });
         }
 
